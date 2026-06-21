@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Quiniela FIFA WC 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --verde: #00C853;
+    --verde-dark: #007B33;
+    --dorado: #FFD700;
+    --naranja: #FF6B00;
+    --rojo: #E53935;
+    --azul: #1565C0;
+    --bg: #0A0E1A;
+    --bg2: #111827;
+    --bg3: #1C2333;
+    --bg4: #243047;
+    --border: rgba(255,255,255,0.08);
+    --text: #F0F4FF;
+    --text2: #8A9BB8;
+    --text3: #5A6A8A;
+    --card-r: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1A2C4A 50%, #0D1B2A 100%);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top:0; z-index:100;
+    backdrop-filter: blur(10px);
+  }
+  .header-inner {
+    max-width: 1400px; margin:0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    gap: 16px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--verde), var(--dorado));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+  .logo span { font-size: 14px; display:block; letter-spacing: 3px; opacity:.7; -webkit-text-fill-color: var(--text2); font-family:'Inter',sans-serif; font-weight:300; }
+
+  .update-badge {
+    font-size: 11px; color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .update-badge .dot { display:inline-block; width:6px; height:6px; background: var(--verde); border-radius:50%; margin-right:6px; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display:none; }
+  .nav-inner {
+    max-width:1400px; margin:0 auto;
+    display: flex; padding: 0 20px;
+    gap: 4px;
+  }
+  .nav-btn {
+    padding: 10px 18px;
+    background: none; border: none;
+    color: var(--text2); cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight:500;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--verde); border-bottom-color: var(--verde); }
+
+  /* ── MAIN ── */
+  main { max-width:1400px; margin:0 auto; padding: 24px 20px; }
+  .section { display:none; }
+  .section.active { display:block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  /* ── LOADING ── */
+  .loading {
+    display: flex; flex-direction:column; align-items: center; justify-content:center;
+    padding: 80px 20px; gap: 16px;
+  }
+  .spinner {
+    width:40px; height:40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--verde);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--text2); font-size:14px; }
+
+  /* ── STATS BAR (top) ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 16px 20px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .stat-card.g::before { background: var(--dorado); }
+  .stat-card.s::before { background: #C0C0C0; }
+  .stat-card.b::before { background: #CD7F32; }
+  .stat-card.gr::before { background: var(--verde); }
+  .stat-card.re::before { background: var(--rojo); }
+  .stat-label { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-bottom:6px; }
+  .stat-value { font-family:'Bebas Neue',sans-serif; font-size:32px; line-height:1; color:var(--text); }
+  .stat-sub { font-size:12px; color:var(--text2); margin-top:4px; }
+
+  /* ── SEARCH ── */
+  .search-row {
+    display: flex; gap: 12px; margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    flex:1; min-width:200px;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 16px;
+    border-radius: 8px; font-family: 'Inter',sans-serif; font-size:14px;
+    outline: none; transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--verde); }
+  .search-input::placeholder { color: var(--text3); }
+
+  .sort-select {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px;
+    border-radius: 8px; font-family: 'Inter',sans-serif; font-size:13px;
+    outline:none; cursor:pointer;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  thead th {
+    padding: 10px 16px;
+    text-align:left; font-size:11px; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--text3); font-weight:600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap; cursor:pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text2); }
+  thead th.sorted { color: var(--verde); }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr:last-child { border-bottom:none; }
+  tbody td {
+    padding: 11px 16px; font-size:13px;
+    white-space: nowrap;
+  }
+
+  /* rank medals */
+  .rank { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; width:32px; }
+  .rank-1 { color: var(--dorado); }
+  .rank-2 { color: #C0C0C0; }
+  .rank-3 { color: #CD7F32; }
+  .rank-last { color: var(--rojo); }
+
+  .name-cell { font-weight:500; }
+  .pts { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px; color:var(--verde); }
+  .dif { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text3); }
+  .dif.zero { color: var(--dorado); }
+
+  /* movement arrows */
+  .mov { font-size:11px; display:inline-flex; align-items:center; gap:2px; padding:2px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; }
+  .mov-up { background: rgba(0,200,83,.15); color:var(--verde); }
+  .mov-down { background: rgba(229,57,53,.15); color:var(--rojo); }
+  .mov-flat { color:var(--text3); }
+
+  /* row highlight zones */
+  .zone-top3 { background: rgba(255,215,0,0.04); }
+  .zone-last { background: rgba(229,57,53,0.04); }
+
+  /* ── MI QUINIELA ── */
+  .search-big {
+    max-width: 500px; margin: 0 auto 32px;
+    display:flex; gap:12px;
+  }
+  .search-big input { flex:1; }
+  .btn-primary {
+    background: var(--verde); color: #000;
+    border: none; padding: 10px 20px;
+    border-radius: 8px; font-family:'Inter',sans-serif;
+    font-size:14px; font-weight:600; cursor:pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: #00e85f; }
+
+  .profile-card {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .profile-name { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:1px; }
+  .profile-stats { display:flex; gap:24px; flex-wrap:wrap; margin-top:12px; }
+  .profile-stat { text-align:center; }
+  .profile-stat .val { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; color:var(--verde); }
+  .profile-stat .lbl { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; }
+
+  .group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .group-card {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius: var(--card-r); overflow:hidden;
+  }
+  .group-card-header {
+    padding: 10px 16px;
+    background: var(--bg3);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px;
+    border-bottom: 1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .match-row {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px;
+  }
+  .match-row:last-child { border-bottom:none; }
+  .match-teams { color:var(--text2); flex:1; }
+  .match-score { font-family:'JetBrains Mono',monospace; font-weight:600; margin:0 8px; }
+  .match-pts {
+    font-size:10px; padding:2px 6px; border-radius:4px;
+    font-weight:600;
+  }
+  .pts-exact { background:rgba(255,215,0,.2); color:var(--dorado); }
+  .pts-result { background:rgba(0,200,83,.15); color:var(--verde); }
+  .pts-miss { background:rgba(229,57,53,.12); color:var(--rojo); }
+  .pts-pending { background:rgba(90,106,138,.2); color:var(--text3); }
+
+  /* ── ESTADÍSTICAS ── */
+  .award-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .award-card {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 20px; cursor:pointer;
+    transition: transform .2s, border-color .2s;
+    position:relative; overflow:hidden;
+  }
+  .award-card:hover { transform:translateY(-2px); border-color: rgba(255,255,255,.18); }
+  .award-card.revealed { border-color: var(--verde); }
+  .award-icon { font-size:32px; margin-bottom:8px; }
+  .award-category { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--text3); margin-bottom:4px; }
+  .award-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:8px; }
+  .award-nominees { font-size:12px; color:var(--text2); }
+  .award-winner {
+    display:none;
+    margin-top:12px; padding-top:12px;
+    border-top: 1px solid var(--border);
+  }
+  .award-card.revealed .award-nominees { display:none; }
+  .award-card.revealed .award-winner { display:block; }
+  .winner-name { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--verde); }
+  .winner-stat { font-size:12px; color:var(--text2); }
+  .tap-hint { font-size:11px; color:var(--text3); margin-top:8px; font-style:italic; }
+
+  /* ── COMENTARIOS ── */
+  .comment-card {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius: var(--card-r); padding:24px;
+    margin-bottom:16px;
+    position:relative;
+  }
+  .comment-meta {
+    display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  }
+  .comment-avatar {
+    width:40px; height:40px; border-radius:50%;
+    background: linear-gradient(135deg, var(--verde-dark), var(--verde));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Bebas Neue',sans-serif; font-size:18px; color:#000;
+    flex-shrink:0;
+  }
+  .comment-byline { font-weight:600; font-size:14px; }
+  .comment-date { font-size:12px; color:var(--text3); }
+  .comment-headline {
+    font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:.5px;
+    margin-bottom:10px;
+    line-height:1.2;
+  }
+  .comment-body { font-size:14px; color:var(--text2); line-height:1.6; }
+
+  /* ── DATOS CURIOSOS ── */
+  .fact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .fact-card {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius: var(--card-r); padding:20px;
+    display:flex; gap:16px; align-items:flex-start;
+    transition: border-color .2s;
+  }
+  .fact-card:hover { border-color: rgba(255,255,255,.15); }
+  .fact-icon { font-size:28px; flex-shrink:0; line-height:1; }
+  .fact-date { font-size:10px; color:var(--text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:.8px; }
+  .fact-text { font-size:14px; color:var(--text); line-height:1.5; }
+
+  /* ── CLAUDINHO BOT ── */
+  .bot-container {
+    max-width: 720px; margin: 0 auto;
+  }
+  .bot-header {
+    background: linear-gradient(135deg, #003D1F, #00612E);
+    border: 1px solid rgba(0,200,83,.3);
+    border-radius: var(--card-r) var(--card-r) 0 0;
+    padding:20px 24px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .bot-avatar {
+    width:52px; height:52px; border-radius:50%;
+    background: linear-gradient(135deg, #00C853, #00E676);
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px;
+    border: 2px solid rgba(255,255,255,.2);
+    flex-shrink:0;
+  }
+  .bot-name { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:1px; }
+  .bot-desc { font-size:12px; color:rgba(255,255,255,.6); }
+  .bot-status { font-size:11px; color:var(--verde); margin-top:2px; }
+  .bot-status::before { content:'● '; }
+
+  .chat-messages {
+    background: var(--bg2);
+    border-left: 1px solid rgba(0,200,83,.3);
+    border-right: 1px solid rgba(0,200,83,.3);
+    padding: 20px;
+    min-height: 300px; max-height:460px; overflow-y:auto;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .msg { max-width:80%; }
+  .msg.bot { align-self:flex-start; }
+  .msg.user { align-self:flex-end; }
+  .msg-bubble {
+    padding: 10px 14px; border-radius: 12px;
+    font-size:14px; line-height:1.5;
+  }
+  .msg.bot .msg-bubble {
+    background: var(--bg3); border:1px solid var(--border);
+    border-bottom-left-radius: 2px;
+  }
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, #004D1A, #006B25);
+    border: 1px solid rgba(0,200,83,.3);
+    color: #e0ffe8;
+    border-bottom-right-radius: 2px;
+  }
+  .msg-time { font-size:10px; color:var(--text3); margin-top:4px; padding:0 4px; }
+  .msg.user .msg-time { text-align:right; }
+
+  .chat-input-row {
+    background: var(--bg3);
+    border: 1px solid rgba(0,200,83,.3);
+    border-radius: 0 0 var(--card-r) var(--card-r);
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    display:flex; gap:12px;
+  }
+  .chat-input {
+    flex:1;
+    background: var(--bg2); border:1px solid var(--border);
+    color: var(--text); padding: 10px 14px;
+    border-radius: 8px; font-family:'Inter',sans-serif; font-size:13px;
+    outline:none; transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--verde); }
+  .chat-input::placeholder { color: var(--text3); }
+  .chat-send {
+    background: var(--verde); color:#000;
+    border:none; padding:10px 16px;
+    border-radius:8px; cursor:pointer; font-weight:700;
+    font-size:16px; transition: background .2s;
+  }
+  .chat-send:hover { background:#00e85f; }
+  .chat-send:disabled { background:var(--text3); cursor:default; }
+
+  .quick-questions {
+    display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px;
+    background: var(--bg2);
+    border-left: 1px solid rgba(0,200,83,.3);
+    border-right: 1px solid rgba(0,200,83,.3);
+    border-bottom: 1px solid var(--border);
+  }
+  .qq-btn {
+    background: var(--bg3); border:1px solid var(--border);
+    color:var(--text2); padding:5px 10px;
+    border-radius:20px; font-size:11px; cursor:pointer;
+    transition: all .2s;
+  }
+  .qq-btn:hover { border-color:var(--verde); color:var(--verde); }
+
+  .typing-indicator {
+    display:flex; gap:4px; align-items:center; padding:2px 0;
+  }
+  .typing-indicator span {
+    width:6px; height:6px; border-radius:50%; background:var(--text3);
+    animation: typing .8s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay:.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay:.3s; }
+  @keyframes typing { 0%,100%{opacity:.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
+
+  /* ── GRUPOS ── */
+  .grupos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .grupo-box {
+    background: var(--bg2); border:1px solid var(--border);
+    border-radius: var(--card-r); overflow:hidden;
+  }
+  .grupo-box-header {
+    padding:10px 16px;
+    background: var(--bg3);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px;
+    border-bottom:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .grupo-stat-row {
+    padding:8px 16px;
+    border-bottom:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px;
+  }
+  .grupo-stat-row:last-child { border-bottom:none; }
+  .prog-bar { flex:1; height:4px; background:var(--bg4); border-radius:2px; margin:0 10px; }
+  .prog-fill { height:100%; border-radius:2px; background: var(--verde); }
+  .prog-pct { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text3); width:28px; text-align:right; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align:center; padding:24px;
+    color:var(--text3); font-size:12px;
+    border-top:1px solid var(--border);
+    margin-top:48px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:600px) {
+    .header-inner { flex-wrap:wrap; }
+    .logo { font-size:22px; }
+    .profile-stats { gap:16px; }
+    .search-big { flex-wrap:wrap; }
+    .bot-header { flex-direction:column; text-align:center; }
+  }
+
+  /* ── MISC ── */
+  .empty-state {
+    text-align:center; padding:48px 20px; color:var(--text3);
+    font-size:14px;
+  }
+  .empty-state .icon { font-size:48px; margin-bottom:12px; }
+  .tag {
+    display:inline-block; padding:2px 8px;
+    border-radius:4px; font-size:10px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.5px;
+  }
+  .tag-leader { background:rgba(255,215,0,.15); color:var(--dorado); }
+  .tag-last { background:rgba(229,57,53,.12); color:var(--rojo); }
+  .tag-mexico { background:rgba(0,100,0,.3); color:#4dff88; }
+
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:700px) { .grid-2 { grid-template-columns:1fr; } }
+
+  .section-title {
+    font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px;
+    margin-bottom:20px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  /* champion prediction bar */
+  .champ-bar-row {
+    display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    font-size:12px;
+  }
+  .champ-name { width:90px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .champ-bar { flex:1; height:6px; background:var(--bg4); border-radius:3px; }
+  .champ-fill { height:100%; border-radius:3px; background: linear-gradient(90deg,var(--verde-dark),var(--verde)); }
+  .champ-count { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text3); width:24px; text-align:right; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      ⚽ Quiniela WC 2026
+      <span>FIFA WORLD CUP · USA · MÉXICO · CANADÁ</span>
+    </div>
+    <div class="update-badge">
+      <span class="dot"></span>
+      <span id="update-time">Cargando...</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showSection('tabla')" id="btn-tabla">🏆 Tabla</button>
+    <button class="nav-btn" onclick="showSection('miquiniela')" id="btn-miquiniela">👤 Mi Quiniela</button>
+    <button class="nav-btn" onclick="showSection('estadisticas')" id="btn-estadisticas">🎖 Premios</button>
+    <button class="nav-btn" onclick="showSection('grupos')" id="btn-grupos">📊 Por Grupo</button>
+    <button class="nav-btn" onclick="showSection('comentarios')" id="btn-comentarios">📰 Comentarios</button>
+    <button class="nav-btn" onclick="showSection('curiosos')" id="btn-curiosos">🧩 Datos Curiosos</button>
+    <button class="nav-btn" onclick="showSection('claudinho')" id="btn-claudinho">🤖 Claudinho</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ── TABLA ── -->
+<div id="tabla" class="section active">
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-card g"><div class="stat-label">🥇 Líder</div><div class="stat-value" id="s-leader">—</div><div class="stat-sub" id="s-leader-pts">— pts</div></div>
+    <div class="stat-card re"><div class="stat-label">🔴 Último (MP)</div><div class="stat-value" id="s-last">—</div><div class="stat-sub" id="s-last-pts">— pts</div></div>
+    <div class="stat-card gr"><div class="stat-label">👥 Quinielas</div><div class="stat-value" id="s-total">—</div><div class="stat-sub">participantes</div></div>
+    <div class="stat-card b"><div class="stat-label">📍 Promedio</div><div class="stat-value" id="s-avg">—</div><div class="stat-sub">puntos</div></div>
+    <div class="stat-card s"><div class="stat-label">🔄 Actualización</div><div class="stat-value" style="font-size:18px" id="s-updated">—</div><div class="stat-sub">última vez</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Clasificación General</div>
+      <div style="font-size:12px;color:var(--text3)">Haz clic en columnas para ordenar</div>
+    </div>
+    <div style="padding:16px; border-bottom:1px solid var(--border);">
+      <div class="search-row">
+        <input class="search-input" type="text" id="search-tabla" placeholder="🔍 Buscar quiniela..." oninput="filterTabla()">
+        <select class="sort-select" id="sort-col" onchange="sortTabla()">
+          <option value="rank">Posición</option>
+          <option value="pts">Puntos Totales</option>
+          <option value="r1">Pts Fase Grupos (R1+R2+R3)</option>
+          <option value="marc">Pts Marcadores</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap" id="tabla-container">
+      <div class="loading"><div class="spinner"></div><p>Cargando datos del sheet...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MI QUINIELA ── -->
+<div id="miquiniela" class="section">
+  <div class="section-title">👤 Mi Quiniela Individual</div>
+  <div class="search-big">
+    <input class="search-input" type="text" id="mi-search" placeholder="Escribe tu nombre...">
+    <button class="btn-primary" onclick="buscarMiQuiniela()">Ver mi quiniela</button>
+  </div>
+  <div id="mi-result"></div>
+</div>
+
+<!-- ── PREMIOS / ESTADÍSTICAS ── -->
+<div id="estadisticas" class="section">
+  <div class="section-title">🎖 Los Premios de la Quiniela</div>
+  <p style="color:var(--text2);font-size:13px;margin-bottom:24px;">Haz clic en cada tarjeta para revelar al ganador con su estadística.</p>
+  <div class="award-grid" id="awards-grid">
+    <div class="loading"><div class="spinner"></div><p>Calculando premios...</p></div>
+  </div>
+
+  <div class="section-title" style="margin-top:40px">🌍 ¿Quién será campeón?</div>
+  <p style="color:var(--text2);font-size:13px;margin-bottom:16px;">Distribución de pronósticos para campeón del mundo.</p>
+  <div class="card" style="padding:20px">
+    <div id="champ-chart"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<!-- ── GRUPOS ── -->
+<div id="grupos" class="section">
+  <div class="section-title">📊 Estadísticas por Grupo</div>
+  <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">¿Qué tan de acuerdo están las 118 quinielas en quién clasifica de cada grupo?</p>
+  <div class="grupos-grid" id="grupos-container">
+    <div class="loading"><div class="spinner"></div><p>Calculando...</p></div>
+  </div>
+</div>
+
+<!-- ── COMENTARIOS ── -->
+<div id="comentarios" class="section">
+  <div class="section-title">📰 Comentarios del Día</div>
+  <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Análisis editorial diario. Para publicar comentarios, agrega filas a la pestaña <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:11px">Comentarios</code> del sheet.</p>
+  <div id="comentarios-container">
+    <!-- fallback con comentario de ejemplo mientras no hay sheet de comentarios -->
+    <div class="comment-card">
+      <div class="comment-meta">
+        <div class="comment-avatar">K</div>
+        <div>
+          <div class="comment-byline">Kike Estremadoyro</div>
+          <div class="comment-date">20 de junio, 2026</div>
+        </div>
+      </div>
+      <div class="comment-headline">🚀 ¡Arrancó el Mundial y con él la guerra de la quiniela!</div>
+      <div class="comment-body">
+        Con 118 quinielas en juego y $111,000 en premios, la batalla ya comenzó. Los partidos de grupos están mostrando sorpresas y la tabla está moviéndose. ¡Que empiece la diversión!<br><br>
+        Para agregar comentarios diarios: ve a tu Google Sheet y crea una pestaña llamada <strong>Comentarios</strong> con columnas: Fecha, Autor, Titular, Cuerpo. Claudinho los leerá automáticamente.
+      </div>
+    </div>
+    <div class="empty-state">
+      <div class="icon">📝</div>
+      <p>Agrega la pestaña "Comentarios" en tu Google Sheet para publicar análisis diarios aquí.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── DATOS CURIOSOS ── -->
+<div id="curiosos" class="section">
+  <div class="section-title">🧩 Datos Curiosos</div>
+  <p style="color:var(--text2);font-size:13px;margin-bottom:20px;">Los mejores hallazgos y curiosidades de la quiniela, actualizados diariamente.</p>
+  <div class="fact-grid" id="facts-container">
+    <div class="loading"><div class="spinner"></div><p>Generando curiosidades...</p></div>
+  </div>
+</div>
+
+<!-- ── CLAUDINHO ── -->
+<div id="claudinho" class="section">
+  <div class="section-title">🤖 Claudinho — Tu Oráculo de la Quiniela</div>
+  <div class="bot-container">
+    <div class="bot-header">
+      <div class="bot-avatar">🤖</div>
+      <div>
+        <div class="bot-name">Claudinho ⚽</div>
+        <div class="bot-desc">Oráculo da quiniela • WC 2026</div>
+        <div class="bot-status">Online y con los datos al día</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg bot">
+        <div class="msg-bubble">
+          Boa tarde! Sou o <strong>Claudinho</strong>, seu oráculo da quiniela! 🇧🇷⚽<br><br>
+          Tenho acceso a todas las 118 quinielas en tiempo real. Puedes preguntarme cualquier cosa: posiciones, puntos, pronósticos, estadísticas... ¡o simplemente insultarme si tu quiniela va mal! 😄<br><br>
+          <em>¿En qué te puedo ayudar, torcedor?</em>
+        </div>
+        <div class="msg-time">Ahora mismo</div>
+      </div>
+    </div>
+    <div class="quick-questions" id="quick-questions">
+      <button class="qq-btn" onclick="sendQuick('¿Quién va en primer lugar?')">👑 ¿Quién va primero?</button>
+      <button class="qq-btn" onclick="sendQuick('¿Cuántas quinielas pronosticaron a México campeón?')">🇲🇽 ¿México campeón?</button>
+      <button class="qq-btn" onclick="sendQuick('¿Cuál es la diferencia entre el 1ro y el último lugar?')">📏 Diferencia 1ro-último</button>
+      <button class="qq-btn" onclick="sendQuick('¿Quién subió más lugares hoy?')">📈 Mayor subida</button>
+      <button class="qq-btn" onclick="sendQuick('¿Quién pronosticó más goles en total?')">⚽ Más goles</button>
+      <button class="qq-btn" onclick="sendQuick('Dime algo curioso de la quiniela')">🧩 Dato curioso</button>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" type="text" id="chat-input" placeholder="Pregúntale algo a Claudinho..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" id="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Quiniela FIFA WC 2026 · Datos actualizados desde Google Sheets cada 15 min · Hecho con ❤️ para la familia
+</footer>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// URLs publicadas como CSV (sin CORS issues)
+// Base URL confirmado por el usuario
+// ══════════════════════════════════════════════
+const SHEET_PUB_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSx33hImGNFAoNxBKi7JD7ZqGMoVyeMNvSD6j1JdMxo38oB61xgTYvw3YLUImn-dMwZ-j5gdHMcprh5';
+
+// ✅ GIDs confirmados por Kike (publicados como página web = mismo GID para CSV):
+const GIDS = {
+  tabla:    '2061338906',  // ✅ FIFA WC 2026     — tabla de posiciones
+  quinielas:'1616528942',  // ✅ Quinielas 2026   — detalle de cada quiniela
+  control:  '1834452765',  // ✅ TablaControl     — master con todo
+};
+
+const CSV = gid => `${SHEET_PUB_BASE}/pub?gid=${gid}&single=true&output=csv`;
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let allPlayers = [];
+let sortDir = { col: 'rank', asc: true };
+let dataLoaded = false;
+let detalleData = [];
+let workingGid = null; // GID que funcionó, se guarda al cargar
+
+// ══════════════════════════════════════════════
+// FETCH CSV → parse
+// ══════════════════════════════════════════════
+async function fetchCSV(gid) {
+  const url = CSV(gid);
+  // Intentamos con el URL publicado (sin CORS issues)
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const text = await r.text();
+    if (text.includes('<!DOCTYPE')) throw new Error('Returned HTML instead of CSV — verify the sheet is published');
+    return parseCSV(text);
+  } catch(e) {
+    throw new Error(`No se pudo cargar (GID=${gid}): ${e.message}`);
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// ══════════════════════════════════════════════
+// TEST DE CONEXIÓN — prueba qué GIDs están disponibles
+// ══════════════════════════════════════════════
+async function testAndLoad() {
+  // Orden de preferencia: TablaControl tiene todo, FIFA WC 2026 es el resumen limpio
+  const attempts = [
+    { gid: GIDS.tabla,     label: 'FIFA WC 2026' },
+    { gid: GIDS.control,   label: 'TablaControl' },
+    { gid: GIDS.quinielas, label: 'Quinielas 2026' },
+  ];
+  for (const attempt of attempts) {
+    try {
+      const rows = await fetchCSV(attempt.gid);
+      if (rows.length > 5) {
+        console.log(`✅ Conectado: ${attempt.label} (${rows.length} filas)`);
+        return { rows, gid: attempt.gid, label: attempt.label };
+      }
+    } catch(e) {
+      console.warn(`❌ Falló ${attempt.label}:`, e.message);
+    }
+  }
+  throw new Error('Ninguna pestaña respondió. Verifica la publicación del sheet.');
+}
+
+// ══════════════════════════════════════════════
+// LOAD MAIN TABLE
+// Columns: 3=Lg, 4=Nombre, 5=R1, 6=R2, 7=R3, 8=Marc, 9=Gpos, 14=Tot, 15=Dif
+// ══════════════════════════════════════════════
+async function loadTabla() {
+  try {
+    const { rows, gid } = await testAndLoad();
+    workingGid = gid; // guardar para otras secciones
+    // Encontrar la fila de encabezado dinámicamente
+    // Buscamos la fila que tenga "Nombre" y "Tot" o "Total"
+    let headerRow = -1;
+    let colMap = { rank:3, nombre:4, r1:5, r2:6, r3:7, marc:8, gpos:9, tot:14, dif:15 };
+
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const r = rows[i];
+      const nombreIdx = r.findIndex(c => c && c.trim() === 'Nombre');
+      const totIdx = r.findIndex(c => c && (c.trim() === 'Tot' || c.trim() === 'Total'));
+      if (nombreIdx >= 0 && totIdx >= 0) {
+        headerRow = i;
+        // Recalibrar columnas desde el encabezado
+        colMap.nombre = nombreIdx;
+        colMap.rank   = r.findIndex(c => c && c.trim() === 'Lg') >= 0 ? r.findIndex(c => c && c.trim() === 'Lg') : nombreIdx - 1;
+        colMap.tot    = totIdx;
+        colMap.dif    = r.findIndex(c => c && c.trim() === 'Dif') >= 0 ? r.findIndex(c => c && c.trim() === 'Dif') : totIdx + 1;
+        colMap.marc   = r.findIndex(c => c && c.trim() === 'Marc');
+        colMap.gpos   = r.findIndex(c => c && c.trim() === 'Gpos') >= 0 ? r.findIndex(c => c && c.trim() === 'Gpos') : -1;
+        const r1i = r.findIndex(c => c && c.trim() === 'R1');
+        const r2i = r.findIndex(c => c && c.trim() === 'R2');
+        const r3i = r.findIndex(c => c && c.trim() === 'R3');
+        if (r1i >= 0) colMap.r1 = r1i;
+        if (r2i >= 0) colMap.r2 = r2i;
+        if (r3i >= 0) colMap.r3 = r3i;
+        break;
+      }
+    }
+
+    const startRow = headerRow >= 0 ? headerRow + 1 : 2;
+    const players = [];
+    for (let i = startRow; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[colMap.nombre] || r[colMap.nombre].trim() === '') continue;
+      const tot = parseInt(r[colMap.tot]) || 0;
+      if (tot === 0) continue;
+      const p = {
+        rank:   parseInt(r[colMap.rank])  || 999,
+        nombre: r[colMap.nombre].trim(),
+        r1:     parseInt(r[colMap.r1])    || 0,
+        r2:     parseInt(r[colMap.r2])    || 0,
+        r3:     parseInt(r[colMap.r3])    || 0,
+        marc:   colMap.marc >= 0 ? (parseInt(r[colMap.marc]) || 0) : 0,
+        gpos:   colMap.gpos >= 0 ? (parseInt(r[colMap.gpos]) || 0) : 0,
+        tot:    tot,
+        dif:    parseInt(r[colMap.dif])   || 0,
+      };
+      if (p.nombre && !p.nombre.startsWith('#')) players.push(p);
+    }
+    allPlayers = players.filter(p => p.tot > 0);
+    dataLoaded = true;
+    renderTabla(allPlayers);
+    updateStatsBar();
+    document.getElementById('update-time').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('s-updated').textContent = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('tabla-container').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p style="font-size:15px;font-weight:600;margin-bottom:8px">No se pudo conectar al Google Sheet</p>
+        <p style="font-size:13px;color:var(--text3);max-width:480px;margin:0 auto 16px">
+          ${e.message}<br><br>
+          <strong>Para resolver:</strong> En tu Google Sheet → Archivo → Compartir → Publicar en la web → 
+          Selecciona la pestaña <em>"FIFA WC 2026"</em> → formato CSV → Publicar.
+        </p>
+        <button class="btn-primary" onclick="loadTabla()">🔄 Reintentar</button>
+      </div>`;
+  }
+}
+
+function updateStatsBar() {
+  if (!allPlayers.length) return;
+  const sorted = [...allPlayers].sort((a,b) => b.tot - a.tot);
+  const leader = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const avg = Math.round(allPlayers.reduce((s,p) => s + p.tot, 0) / allPlayers.length);
+
+  document.getElementById('s-leader').textContent = leader.nombre.split(' ').slice(0,2).join(' ');
+  document.getElementById('s-leader-pts').textContent = leader.tot + ' pts';
+  document.getElementById('s-last').textContent = last.nombre.split(' ').slice(0,2).join(' ');
+  document.getElementById('s-last-pts').textContent = last.tot + ' pts';
+  document.getElementById('s-total').textContent = allPlayers.length;
+  document.getElementById('s-avg').textContent = avg;
+}
+
+function renderTabla(players) {
+  const sorted = [...players];
+  const n = players.length;
+  // determine zones
+  const maxRank = Math.max(...players.map(p=>p.rank));
+
+  const html = `
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortByCol('rank')">Pos ${sortDir.col==='rank'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('nombre')">Nombre ${sortDir.col==='nombre'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('tot')" class="${sortDir.col==='tot'?'sorted':''}">Total ${sortDir.col==='tot'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('marc')">Marc. ${sortDir.col==='marc'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('r1')">R1 ${sortDir.col==='r1'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('r2')">R2 ${sortDir.col==='r2'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+          <th onclick="sortByCol('gpos')">Fase G.</th>
+          <th onclick="sortByCol('dif')">Dif. ${sortDir.col==='dif'?(sortDir.asc?'↑':'↓'):'↕'}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(p => {
+          const isTop3 = p.rank <= 3;
+          const isLast = p.rank >= maxRank;
+          const rankCls = p.rank===1?'rank-1':p.rank===2?'rank-2':p.rank===3?'rank-3':isLast?'rank-last':'';
+          const rowCls = isTop3?'zone-top3':isLast?'zone-last':'';
+          const medal = p.rank===1?'🥇':p.rank===2?'🥈':p.rank===3?'🥉':isLast?'🔴':'';
+          const difSign = p.dif === 0 ? '= 0' : p.dif > 0 ? '+'+p.dif : p.dif;
+          return `<tr class="${rowCls}" onclick="quickMiQuiniela('${p.nombre.replace(/'/g,"\\'")}')">
+            <td><span class="rank ${rankCls}">${medal||p.rank}</span></td>
+            <td class="name-cell">${p.nombre}</td>
+            <td class="pts">${p.tot}</td>
+            <td style="font-family:JetBrains Mono,monospace;font-size:12px">${p.marc}</td>
+            <td style="font-family:JetBrains Mono,monospace;font-size:12px">${p.r1}</td>
+            <td style="font-family:JetBrains Mono,monospace;font-size:12px">${p.r2}</td>
+            <td style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--verde)">${p.gpos>0?'+'+p.gpos:p.gpos}</td>
+            <td class="dif ${p.dif===0?'zero':''}">${difSign}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('tabla-container').innerHTML = html;
+}
+
+function sortByCol(col) {
+  if (sortDir.col === col) sortDir.asc = !sortDir.asc;
+  else { sortDir.col = col; sortDir.asc = col === 'rank'; }
+
+  let players = allPlayers.filter(p => {
+    const q = document.getElementById('search-tabla').value.toLowerCase();
+    return !q || p.nombre.toLowerCase().includes(q);
+  });
+
+  if (col === 'nombre') players.sort((a,b) => sortDir.asc ? a.nombre.localeCompare(b.nombre) : b.nombre.localeCompare(a.nombre));
+  else players.sort((a,b) => sortDir.asc ? a[col]-b[col] : b[col]-a[col]);
+
+  renderTabla(players);
+}
+
+function filterTabla() {
+  const q = document.getElementById('search-tabla').value.toLowerCase();
+  const filtered = q ? allPlayers.filter(p => p.nombre.toLowerCase().includes(q)) : allPlayers;
+  renderTabla(filtered);
+}
+
+function sortTabla() {
+  const col = document.getElementById('sort-col').value;
+  sortByCol(col === 'pts' ? 'tot' : col === 'r1' ? 'marc' : col);
+}
+
+// ══════════════════════════════════════════════
+// MI QUINIELA
+// ══════════════════════════════════════════════
+function quickMiQuiniela(nombre) {
+  showSection('miquiniela');
+  document.getElementById('mi-search').value = nombre;
+  buscarMiQuiniela();
+}
+
+function buscarMiQuiniela() {
+  const q = document.getElementById('mi-search').value.trim().toLowerCase();
+  if (!q) return;
+
+  const found = allPlayers.filter(p => p.nombre.toLowerCase().includes(q));
+  const el = document.getElementById('mi-result');
+
+  if (!found.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>No encontré ninguna quiniela con ese nombre.<br><small>Intenta con apellido o nombre parcial.</small></p></div>`;
+    return;
+  }
+
+  if (found.length > 1) {
+    el.innerHTML = `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">Resultados (${found.length})</div></div>
+        <div style="padding:8px">
+          ${found.map(p => `<div style="padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="showPlayer('${p.nombre.replace(/'/g,"\\'")}')">
+            <span>${p.nombre}</span>
+            <span style="font-family:JetBrains Mono,monospace;color:var(--verde)">${p.tot} pts · #${p.rank}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    return;
+  }
+
+  showPlayer(found[0].nombre);
+}
+
+function showPlayer(nombre) {
+  const p = allPlayers.find(x => x.nombre === nombre);
+  if (!p) return;
+  const el = document.getElementById('mi-result');
+  const difStr = p.dif === 0 ? '= 0 (¡LÍDER!)' : p.dif < 0 ? p.dif + ' del líder' : '+' + p.dif;
+  const maxRank = Math.max(...allPlayers.map(x=>x.rank));
+  const total = allPlayers.length;
+  const pctile = Math.round((1 - (p.rank - 1) / total) * 100);
+
+  el.innerHTML = `
+    <div class="profile-card">
+      <div class="profile-name">${p.nombre}</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:4px">
+        ${p.rank <= 3 ? ['🥇','🥈','🥉'][p.rank-1]+' ':''}Posición #${p.rank} de ${total} · Top ${100-pctile+1}%
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="val">${p.tot}</div><div class="lbl">Puntos totales</div></div>
+        <div class="profile-stat"><div class="val">${p.marc}</div><div class="lbl">Marcadores</div></div>
+        <div class="profile-stat"><div class="val">${p.r1+p.r2+p.r3}</div><div class="lbl">Fase Grupos (R)</div></div>
+        <div class="profile-stat"><div class="val" style="color:var(--verde)">${p.gpos > 0 ? '+' + p.gpos : p.gpos}</div><div class="lbl">Bonus Fase G.</div></div>
+        <div class="profile-stat"><div class="val ${p.dif===0?'':''}">
+          <span style="color:${p.dif===0?'var(--dorado)':p.dif<0?'var(--rojo)':'var(--verde)'}">${difStr}</span>
+        </div><div class="lbl">Diferencia</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 Desglose de Puntos</div>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px">
+        ${[
+          {lbl:'R1 (1er Ronda)',val:p.r1,max:33},
+          {lbl:'R2 (2da Ronda)',val:p.r2,max:18},
+          {lbl:'R3 (3ra Ronda)',val:p.r3,max:12},
+          {lbl:'Marcadores exactos',val:p.marc,max:50},
+          {lbl:'Bonus Fase Grupos',val:p.gpos,max:8},
+        ].map(s => `
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px">${s.lbl}</div>
+            <div style="font-family:JetBrains Mono,monospace;font-size:20px;font-weight:600;color:var(--verde)">${s.val}</div>
+            <div class="prog-bar" style="margin:6px 0 0;flex:unset">
+              <div class="prog-fill" style="width:${Math.min(100,Math.round(s.val/s.max*100))}%"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:12px;padding:14px 16px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;color:var(--text2)">
+      💡 Para ver los pronósticos partido a partido, pregúntale a <strong>Claudinho</strong> con la quiniela completa de ${p.nombre.split(' ')[0]}.
+      <br><br>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="showSection('claudinho');setTimeout(()=>{document.getElementById('chat-input').value='¿Qué ha pronosticado ${p.nombre.split(' ')[0]} en esta quiniela?';sendChat()},300)">
+        🤖 Preguntarle a Claudinho
+      </button>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// ESTADÍSTICAS / PREMIOS
+// ══════════════════════════════════════════════
+function buildAwards() {
+  if (!allPlayers.length) return;
+  const sorted = [...allPlayers].sort((a,b) => b.tot - a.tot);
+  const maxRank = Math.max(...allPlayers.map(p=>p.rank));
+  const last = sorted[sorted.length-1];
+  const leader = sorted[0];
+
+  // Most markers
+  const topMarc = [...allPlayers].sort((a,b) => b.marc-a.marc);
+  // Most conservative (fewest markers)
+  const conservative = [...allPlayers].sort((a,b) => a.marc-b.marc);
+  // Tightest cluster (most within 2 pts of avg)
+  const avg = Math.round(allPlayers.reduce((s,p)=>s+p.tot,0)/allPlayers.length);
+
+  const awards = [
+    {
+      icon:'🥇', cat:'Liderazgo', title:'Va en primer lugar',
+      noms: sorted.slice(0,3).map(p=>`#${p.rank} ${p.nombre.split(' ').slice(0,2).join(' ')}`).join(' · '),
+      winner: leader.nombre, stat: `${leader.tot} puntos totales · Diferencia: ${leader.dif===0?'Es el LÍDER':leader.dif}`
+    },
+    {
+      icon:'🔴', cat:'Premio Consuelo (MP)', title:'Último lugar',
+      noms: sorted.slice(-3).reverse().map(p=>`${p.nombre.split(' ').slice(0,2).join(' ')} ${p.tot}pts`).join(' · '),
+      winner: last.nombre, stat: `${last.tot} puntos · ¡Pero gana el premio de Mal Perdedor!`
+    },
+    {
+      icon:'🎯', cat:'Precisión', title:'Más marcadores exactos',
+      noms: topMarc.slice(0,3).map(p=>`${p.nombre.split(' ').slice(0,2).join(' ')} (${p.marc})`).join(' · '),
+      winner: topMarc[0].nombre, stat: `${topMarc[0].marc} marcadores exactos`
+    },
+    {
+      icon:'🐢', cat:'Conservador', title:'Menos marcadores exactos',
+      noms: conservative.slice(0,3).map(p=>`${p.nombre.split(' ').slice(0,2).join(' ')} (${p.marc})`).join(' · '),
+      winner: conservative[0].nombre, stat: `Solo ${conservative[0].marc} marcadores exactos... ¡cuidado!`
+    },
+    {
+      icon:'📈', cat:'Tendencia', title:'Mejor en fase de grupos (R)',
+      noms: [...allPlayers].sort((a,b)=>(b.r1+b.r2+b.r3)-(a.r1+a.r2+a.r3)).slice(0,3).map(p=>`${p.nombre.split(' ')[0]} (${p.r1+p.r2+p.r3})`).join(' · '),
+      winner: [...allPlayers].sort((a,b)=>(b.r1+b.r2+b.r3)-(a.r1+a.r2+a.r3))[0].nombre,
+      stat: `${[...allPlayers].sort((a,b)=>(b.r1+b.r2+b.r3)-(a.r1+a.r2+a.r3))[0].r1 + [...allPlayers].sort((a,b)=>(b.r1+b.r2+b.r3)-(a.r1+a.r2+a.r3))[0].r2 + [...allPlayers].sort((a,b)=>(b.r1+b.r2+b.r3)-(a.r1+a.r2+a.r3))[0].r3} puntos en resultados de grupo`
+    },
+    {
+      icon:'💪', cat:'Bonus Grupos', title:'Mayor bonus fase de grupos',
+      noms: [...allPlayers].sort((a,b)=>b.gpos-a.gpos).slice(0,3).map(p=>`${p.nombre.split(' ')[0]} (+${p.gpos})`).join(' · '),
+      winner: [...allPlayers].sort((a,b)=>b.gpos-a.gpos)[0].nombre,
+      stat: `+${[...allPlayers].sort((a,b)=>b.gpos-a.gpos)[0].gpos} puntos de bonus en fase grupos`
+    },
+    {
+      icon:'😤', cat:'Mala suerte', title:'Mayor dif. negativa con líder',
+      noms: sorted.slice(-3).reverse().map(p=>`${p.nombre.split(' ')[0]} (${p.dif})`).join(' · '),
+      winner: sorted[sorted.length-1].nombre,
+      stat: `${sorted[sorted.length-1].dif} puntos del líder ¡ánimo!`
+    },
+    {
+      icon:'🌟', cat:'Estrella', title:'El más cerca del promedio',
+      noms: [...allPlayers].sort((a,b)=>Math.abs(a.tot-avg)-Math.abs(b.tot-avg)).slice(0,3).map(p=>`${p.nombre.split(' ')[0]} (${p.tot})`).join(' · '),
+      winner: [...allPlayers].sort((a,b)=>Math.abs(a.tot-avg)-Math.abs(b.tot-avg))[0].nombre,
+      stat: `Con ${[...allPlayers].sort((a,b)=>Math.abs(a.tot-avg)-Math.abs(b.tot-avg))[0].tot} pts está a ${Math.abs([...allPlayers].sort((a,b)=>Math.abs(a.tot-avg)-Math.abs(b.tot-avg))[0].tot-avg)} del promedio (${avg})`
+    },
+  ];
+
+  const html = awards.map((a,i) => `
+    <div class="award-card" onclick="this.classList.toggle('revealed')" data-i="${i}">
+      <div class="award-icon">${a.icon}</div>
+      <div class="award-category">${a.cat}</div>
+      <div class="award-title">${a.title}</div>
+      <div class="award-nominees">🏅 Nominados: ${a.noms}</div>
+      <div class="tap-hint">👆 Toca para revelar</div>
+      <div class="award-winner">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px">🏆 Ganador</div>
+        <div class="winner-name">${a.winner}</div>
+        <div class="winner-stat">${a.stat}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('awards-grid').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+// CAMPEÓN CHART — load from TablaControl
+// ══════════════════════════════════════════════
+async function buildChampChart() {
+  // We use allPlayers but don't have champion data from the summary sheet
+  // So we'll show a note and offer to load from detail
+  document.getElementById('champ-chart').innerHTML = `
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">
+      <p>⚽ Para ver los pronósticos de campeón necesito cargar el detalle completo (TablaControl).</p>
+      <p style="margin-top:8px">Pregúntale a <strong>Claudinho</strong>: <em>"¿Cuántas personas apostaron por cada campeón?"</em> para obtener el desglose completo.</p>
+      <br>
+      <button class="btn-primary" onclick="loadChampData()">📊 Cargar distribución de campeones</button>
+    </div>`;
+}
+
+async function loadChampData() {
+  document.getElementById('champ-chart').innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando datos detallados...</p></div>';
+  try {
+    const rows = await fetchCSV(GIDS.control);  // TablaControl tiene campeón en última col
+    // In TablaControl the last column before empty ones is the campeón
+    // Let's try to find it - data rows start at row 3 (index 2)
+    const champCount = {};
+    let champColFound = false;
+
+    for (let i = 3; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 5 || !r[4]) continue;
+      // Last non-empty column in each row should be campeón
+      // Find last meaningful column
+      let lastCol = r.length - 1;
+      while (lastCol > 0 && (!r[lastCol] || r[lastCol].trim() === '0' || r[lastCol].trim() === '')) lastCol--;
+      const champ = r[lastCol] ? r[lastCol].trim() : '';
+      if (champ && champ !== '0' && champ.length > 2 && !champ.match(/^\d/)) {
+        champCount[champ] = (champCount[champ] || 0) + 1;
+        champColFound = true;
+      }
+    }
+
+    if (!champColFound || Object.keys(champCount).length === 0) {
+      document.getElementById('champ-chart').innerHTML = '<p style="color:var(--text3);font-size:13px">No se encontraron datos de campeón en esta vista. Prueba con Claudinho.</p>';
+      return;
+    }
+
+    const sorted = Object.entries(champCount).sort((a,b) => b[1]-a[1]).slice(0,15);
+    const max = sorted[0][1];
+    const total = Object.values(champCount).reduce((s,v)=>s+v,0);
+
+    const html = sorted.map(([team,count]) => `
+      <div class="champ-bar-row">
+        <div class="champ-name">${team}</div>
+        <div class="champ-bar"><div class="champ-fill" style="width:${Math.round(count/max*100)}%"></div></div>
+        <div class="champ-count">${count}</div>
+        <div style="font-size:10px;color:var(--text3);width:30px">${Math.round(count/total*100)}%</div>
+      </div>
+    `).join('');
+
+    document.getElementById('champ-chart').innerHTML = `
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;text-transform:uppercase;letter-spacing:.6px">
+        Top pronósticos · ${total} quinielas con campeón registrado
+      </div>
+      ${html}
+    `;
+  } catch(e) {
+    document.getElementById('champ-chart').innerHTML = `<p style="color:var(--rojo);font-size:13px">Error: ${e.message}</p>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// GRUPOS
+// ══════════════════════════════════════════════
+const GRUPOS_DEF = {
+  A: ['México','Sudáfrica','Korea','Chequia'],
+  B: ['Canadá','Bosnia','Catar','Suiza'],
+  C: ['Brasil','Marruecos','Haití','Escocia'],
+  D: ['USA','Paraguay','Australia','Turquía'],
+  E: ['Alemania','Curazao','C. Marfil','Ecuador'],
+  F: ['Holanda','Japón','Suecia','Tunisia'],
+  G: ['Bélgica','Egipto','Irán','Nueva Zelanda'],
+  H: ['España','Cabo Verde','Arabia Saudita','Uruguay'],
+  I: ['Francia','Senegal','Irak','Noruega'],
+  J: ['Argentina','Algeria','Austria','Jordania'],
+  K: ['Portugal','RD Congo','Uzbekistán','Colombia'],
+  L: ['Inglaterra','Croacia','Ghana','Panamá'],
+};
+
+async function loadGrupos() {
+  try {
+    // Use the detail from WC26 2R if available, else approximate from summary
+    // Since we only have the summary data, show what % picked each team as group winner
+    // We'll load TablaControl for this
+    const rows = await fetchCSV(GIDS.control);  // TablaControl tiene clasificados por grupo
+
+    // Columns for group winners from TablaControl header analysis:
+    // After all group matches, there are 1ro/2do columns for each group A-L
+    // Based on known structure: cols after group matches ≈ col 246+ for group standings
+    // This is complex - let's show a simplified version using the available data
+
+    // For now show general participation stats by group
+    document.getElementById('grupos-container').innerHTML = Object.entries(GRUPOS_DEF).map(([letra, teams]) => `
+      <div class="grupo-box">
+        <div class="grupo-box-header">
+          <span>Grupo ${letra}</span>
+          <span style="font-size:11px;color:var(--text3);font-family:normal">${teams.length} equipos</span>
+        </div>
+        ${teams.map((t,i) => {
+          const color = i === 0 ? 'var(--dorado)' : i === 1 ? '#C0C0C0' : 'var(--text3)';
+          return `<div class="grupo-stat-row">
+            <span style="color:${color}">${i===0?'⭐ ':i===1?'🔵 ':i===2?'🟡 ':'⚪ '}${t}</span>
+          </div>`;
+        }).join('')}
+        <div style="padding:8px 16px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">
+          Pregunta a Claudinho por el % de clasificación
+        </div>
+      </div>
+    `).join('');
+
+    // Try to actually compute from TablaControl if possible
+    computeGroupStats(rows);
+  } catch(e) {
+    document.getElementById('grupos-container').innerHTML = `<div class="empty-state"><p>Error cargando grupos: ${e.message}</p></div>`;
+  }
+}
+
+function computeGroupStats(rows) {
+  // TablaControl has group standings in columns after the match scores
+  // From the header analysis, 1ro/2do for each group start at a specific offset
+  // The header row has: ...1ro,2do,,1ro,2do,, for each of the 12 groups
+  // Let's find the start of these classification columns
+  // Looking at header row (index 1):
+  const headerRow = rows[1] || [];
+
+  // Find columns with "1ro" text
+  const col1ro = [];
+  headerRow.forEach((v,i) => { if (v && v.trim()==='1ro') col1ro.push(i); });
+
+  if (col1ro.length < 12) {
+    // Can't compute properly, keep the static view
+    return;
+  }
+
+  const grupos = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const groupCounts = {};
+  grupos.forEach(g => { groupCounts[g] = { first:{}, second:{} }; });
+
+  for (let i = 3; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[4] || !r[4].trim()) continue;
+    col1ro.forEach((col, gi) => {
+      if (gi >= 12) return;
+      const g = grupos[gi];
+      const first = r[col] ? r[col].trim() : '';
+      const second = r[col+1] ? r[col+1].trim() : '';
+      if (first && first !== '0' && !first.match(/^\d/)) groupCounts[g].first[first] = (groupCounts[g].first[first]||0)+1;
+      if (second && second !== '0' && !second.match(/^\d/)) groupCounts[g].second[second] = (groupCounts[g].second[second]||0)+1;
+    });
+  }
+
+  const total = allPlayers.length || 118;
+
+  document.getElementById('grupos-container').innerHTML = Object.entries(groupCounts).map(([letra, data]) => {
+    const firstSorted = Object.entries(data.first).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const secondSorted = Object.entries(data.second).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const maxF = firstSorted[0]?firstSorted[0][1]:1;
+    const maxS = secondSorted[0]?secondSorted[0][1]:1;
+
+    return `<div class="grupo-box">
+      <div class="grupo-box-header">
+        <span>Grupo ${letra}</span>
+        <span style="font-size:10px;color:var(--text3);font-family:inherit">% de quinielas</span>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">1er lugar</div>
+        ${firstSorted.map(([team,cnt]) => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+            <span style="width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${team}</span>
+            <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(cnt/maxF*100)}%"></div></div>
+            <span class="prog-pct">${Math.round(cnt/total*100)}%</span>
+          </div>`).join('')}
+      </div>
+      <div style="padding:10px 16px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">2do lugar</div>
+        ${secondSorted.map(([team,cnt]) => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+            <span style="width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${team}</span>
+            <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(cnt/maxS*100)}%;background:rgba(0,200,83,.5)"></div></div>
+            <span class="prog-pct">${Math.round(cnt/total*100)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// DATOS CURIOSOS — generados de los datos reales
+// ══════════════════════════════════════════════
+function buildFacts() {
+  if (!allPlayers.length) return;
+  const sorted = [...allPlayers].sort((a,b)=>b.tot-a.tot);
+  const avg = Math.round(allPlayers.reduce((s,p)=>s+p.tot,0)/allPlayers.length);
+  const leader = sorted[0];
+  const last = sorted[sorted.length-1];
+  const topMarc = [...allPlayers].sort((a,b)=>b.marc-a.marc)[0];
+  const tied1st = sorted.filter(p=>p.rank===1).length;
+  const belowAvg = allPlayers.filter(p=>p.tot<avg).length;
+  const maxRank = Math.max(...allPlayers.map(p=>p.rank));
+  const topGpos = [...allPlayers].sort((a,b)=>b.gpos-a.gpos)[0];
+
+  const facts = [
+    { icon:'🏆', date:'Hoy', text:`<strong>${leader.nombre}</strong> lidera la quiniela con <strong>${leader.tot} puntos</strong> — a ${Math.abs(last.dif)} puntos del último lugar (${last.nombre.split(' ')[0]}).` },
+    { icon:'🎯', date:'Hoy', text:`<strong>${topMarc.nombre.split(' ')[0]}</strong> es el más preciso: acertó <strong>${topMarc.marc} marcadores exactos</strong> — de lejos el más difícil de lograr.` },
+    { icon:'📊', date:'Hoy', text:`El promedio de la quiniela es <strong>${avg} puntos</strong>. <strong>${belowAvg}</strong> de ${allPlayers.length} participantes están por debajo del promedio.` },
+    { icon:'⚽', date:'Hoy', text:`Hay <strong>${allPlayers.filter(p=>p.gpos>0).length} quinielas</strong> que ganaron puntos de bonus en fase de grupos. El máximo fue <strong>+${topGpos.gpos}</strong> por ${topGpos.nombre.split(' ')[0]}.` },
+    { icon:'🔴', date:'Hoy', text:`El <strong>último lugar</strong> (${last.nombre}) tiene ${last.tot} puntos... pero ojo: ¡también <strong>gana un premio</strong> por ser el mal perdedor! 🎁` },
+    { icon:'🤝', date:'Hoy', text:tied1st > 1 ? `¡Hay <strong>${tied1st} quinielas empatadas en el 1er lugar</strong>! Cada partido puede cambiar el liderato.` : `Solo <strong>1 quiniela</strong> ocupa el primer lugar. ¡${leader.nombre.split(' ')[0]} está solo arriba!` },
+    { icon:'💰', date:'Hoy', text:`Con <strong>118 quinielas</strong> participando, hay <strong>$111,000 pesos</strong> en premios en juego. El 1er lugar se lleva <strong>$22,230</strong>.` },
+    { icon:'📈', date:'Hoy', text:`La diferencia entre el 1er lugar (${leader.tot} pts) y el promedio (${avg} pts) es de <strong>${leader.tot - avg} puntos</strong> — cada partido importa.` },
+  ];
+
+  document.getElementById('facts-container').innerHTML = facts.map(f => `
+    <div class="fact-card">
+      <div class="fact-icon">${f.icon}</div>
+      <div>
+        <div class="fact-date">${f.date}</div>
+        <div class="fact-text">${f.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════
+// CLAUDINHO BOT
+// ══════════════════════════════════════════════
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
+
+function getQuinielaContext() {
+  if (!allPlayers.length) return 'Datos aún no cargados.';
+  const sorted = [...allPlayers].sort((a,b)=>b.tot-a.tot);
+  const top10 = sorted.slice(0,10).map(p=>`#${p.rank} ${p.nombre}: ${p.tot}pts (marc:${p.marc})`).join('\n');
+  const bot5 = sorted.slice(-5).map(p=>`#${p.rank} ${p.nombre}: ${p.tot}pts`).join('\n');
+  const avg = Math.round(allPlayers.reduce((s,p)=>s+p.tot,0)/allPlayers.length);
+  const topMarc = [...allPlayers].sort((a,b)=>b.marc-a.marc)[0];
+
+  return `DATOS DE LA QUINIELA FIFA WC 2026 (actualizados en tiempo real):
+Total participantes: ${allPlayers.length}
+Promedio de puntos: ${avg}
+Líder: ${sorted[0].nombre} con ${sorted[0].tot} pts
+Último: ${sorted[sorted.length-1].nombre} con ${sorted[sorted.length-1].tot} pts
+Más marcadores exactos: ${topMarc.nombre} (${topMarc.marc})
+
+TOP 10:
+${top10}
+
+ÚLTIMOS 5:
+${bot5}
+
+TODOS LOS PARTICIPANTES (nombre: total pts, rank):
+${allPlayers.map(p=>`${p.nombre}: ${p.tot}pts #${p.rank} (marc:${p.marc})`).join('\n')}`;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  appendMsg('user', msg);
+  input.value = '';
+  document.getElementById('chat-send').disabled = true;
+
+  const typingId = appendTyping();
+
+  try {
+    const context = getQuinielaContext();
+    const systemPrompt = `Eres Claudinho, el oráculo oficial de la Quiniela FIFA WC 2026. Tienes una personalidad futbolera brasileña: carismático, divertido, un poco sarcástico pero siempre amable. Hablas en español mexicano con algún toque brasileño ocasional (dices "cara", "torcedor", "boa"). Usas emojis con moderación. Eres muy preciso con los números y datos. Si alguien pregunta por su quiniela específica, buscas en los datos. Respondes de forma concisa (3-5 oraciones máximo) a menos que te pidan un análisis detallado. 
+
+${context}`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: msg }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || 'Uy, tive um problema técnico cara. Intenta de nuevo.';
+    removeTyping(typingId);
+    appendMsg('bot', text);
+  } catch(e) {
+    removeTyping(typingId);
+    appendMsg('bot', '⚠️ Parece que hay un problema de conexión. Verifica que la app tenga acceso a la API y vuelve a intentar.');
+  }
+
+  document.getElementById('chat-send').disabled = false;
+}
+
+function sendQuick(text) {
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+function appendMsg(role, text) {
+  const el = document.getElementById('chat-messages');
+  const time = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div><div class="msg-time">${time}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+let typingCounter = 0;
+function appendTyping() {
+  const id = ++typingCounter;
+  const el = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = `typing-${id}`;
+  div.innerHTML = `<div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(`typing-${id}`);
+  if (el) el.remove();
+}
+
+// ══════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('btn-'+id).classList.add('active');
+
+  // Lazy load
+  if (id === 'estadisticas' && allPlayers.length) {
+    buildAwards();
+    buildChampChart();
+  }
+  if (id === 'grupos') loadGrupos();
+  if (id === 'curiosos' && allPlayers.length) buildFacts();
+}
+
+// ══════════════════════════════════════════════
+// AUTO-REFRESH cada 15 min
+// ══════════════════════════════════════════════
+function maybeRefresh() {
+  const h = new Date().getHours();
+  if (h >= 7 && h < 23) loadTabla();
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadTabla();
+  setInterval(maybeRefresh, 15 * 60 * 1000);
+});
+</script>
+</body>
+</html>
