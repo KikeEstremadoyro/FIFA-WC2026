@@ -678,17 +678,39 @@ function buildMatchCards(nombre) {
   groups.forEach(([letra, gInfo]) => {
     html += `<div class="ggroup"><div class="gg-title">Grupo ${letra}</div><div class="matches-grid">`;
     gInfo.matches.forEach((matchName, mi) => {
-      const s1 = playerRow[col+mi*3] || '?';
-      const s2 = playerRow[col+mi*3+1] || '?';
-      const pts = parseInt(playerRow[col+mi*3+2]) || 0;
-      const pend = s1==='?' || s2==='?';
-      const ptsClass = pend?'b-pend':pts===4?'b-exact':pts>0?'b-result':'b-miss';
-      const ptsLabel = pend?'Pendiente':pts===4?'⭐ Exacto':pts>0?'✓ Resultado':'✗ Fallo';
+      const s1raw = playerRow[col+mi*3] !== undefined ? playerRow[col+mi*3] : '';
+      const s2raw = playerRow[col+mi*3+1] !== undefined ? playerRow[col+mi*3+1] : '';
+      const ptsRaw = playerRow[col+mi*3+2] !== undefined ? playerRow[col+mi*3+2] : '';
+      const pts = parseInt(ptsRaw) || 0;
+
+      const s1 = s1raw.trim();
+      const s2 = s2raw.trim();
+
+      // Pendiente = celdas vacías O ptsRaw también vacío (partido no jugado)
+      const pending = s1 === '' || s2 === '' || ptsRaw.trim() === '';
+
+      let ptsClass, ptsLabel, scoreDisplay;
+      if (pending) {
+        ptsClass = 'b-pend'; ptsLabel = '⏳ Pendiente';
+        scoreDisplay = `${s1||'?'} - ${s2||'?'}`;
+      } else if (pts === 4) {
+        ptsClass = 'b-exact'; ptsLabel = '⭐ +4 Exacto';
+        scoreDisplay = `${s1} - ${s2}`;
+      } else if (pts === 1) {
+        ptsClass = 'b-result'; ptsLabel = '✓ +1 Resultado';
+        scoreDisplay = `${s1} - ${s2}`;
+      } else if (pts > 0) {
+        ptsClass = 'b-result'; ptsLabel = `✓ +${pts}`;
+        scoreDisplay = `${s1} - ${s2}`;
+      } else {
+        ptsClass = 'b-miss'; ptsLabel = '✗ Fallo';
+        scoreDisplay = `${s1} - ${s2}`;
+      }
       const teams = matchName.split(' vs ');
       html += `<div class="match-card">
         <div class="match-teams">
           <span class="team-name">${teams[0]}</span>
-          <span class="match-score">${s1} - ${s2}</span>
+          <span class="match-score" style="${pending?'color:var(--text3)':''}">${scoreDisplay}</span>
           <span class="team-name right">${teams[1]}</span>
         </div>
         <div class="match-result">
@@ -701,73 +723,232 @@ function buildMatchCards(nombre) {
     col += 18; // 6 matches × 3 cols per group
   });
 
+  // === CLASIFICADOS 1ro y 2do POR GRUPO ===
+  // After 12 groups × 18 cols = 216 cols from start (col 17 + 216 = col 233)
+  // Each group has: 1ro, 2do, [pts_bonus] = 3 cols, with a separator every 3
+  // From header row: 1ro,2do,,1ro,2do,, repeated 12 times
+  const clasiStart = col; // col is now at 17 + 216 = 233 after all groups
+
+  // Find 1ro columns from header row for accuracy
+  let col1ro = [];
+  const hdr = quinielaRows.find(r => r.some(c => c && c.trim() === '1ro'));
+  if (hdr) hdr.forEach((v,i) => { if (v && v.trim()==='1ro') col1ro.push(i); });
+
+  if (col1ro.length >= 12) {
+    const gLetras = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    html += `
+    <div style="margin:20px 0 8px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--dorado);margin-bottom:10px">
+        🏅 Clasificados por Grupo
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+        ${gLetras.map((letra, gi) => {
+          const c = col1ro[gi];
+          const prim = playerRow[c]?.trim() || '';
+          const seg  = playerRow[c+1]?.trim() || '';
+          const ptsBono = parseInt(playerRow[c+2]) || 0;
+          const p1 = (!prim || prim==='0') ? '?' : prim;
+          const p2 = (!seg  || seg==='0')  ? '?' : seg;
+          const badgePrim = ptsBono===4?'<span class="badge b-exact" style="font-size:9px">⭐+4</span>':ptsBono>0?'<span class="badge b-result" style="font-size:9px">✓</span>':p1!=='?'?'<span class="badge b-pend" style="font-size:9px">⏳</span>':'';
+          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <div style="padding:4px 10px;background:var(--bg4);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--dorado);display:flex;justify-content:space-between">
+              <span>Grupo ${letra}</span>${badgePrim}
+            </div>
+            <div style="padding:6px 10px;border-bottom:1px solid var(--border);font-size:11px;display:flex;align-items:center;gap:6px">
+              <span style="color:var(--dorado)">🥇</span><span>${p1}</span>
+            </div>
+            <div style="padding:6px 10px;font-size:11px;display:flex;align-items:center;gap:6px">
+              <span style="color:#C0C0C0">🥈</span><span>${p2}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
   html += '</div>';
   return html;
 }
 
 function buildBracket(nombre) {
-  let playerRow = null;
+  let row = null;
   for (const r of quinielaRows) {
-    if (r[4]&&r[4].trim()===nombre) { playerRow=r; break; }
+    if (r[4] && r[4].trim() === nombre) { row = r; break; }
   }
-  if (!playerRow) return '<p style="color:var(--text3);font-size:13px">Datos del bracket cargando...</p>';
+  if (!row) return '<p style="color:var(--text3);font-size:13px">Datos del bracket cargando desde el sheet...</p>';
 
-  // Find last columns — bracket data is near end of row
-  // Champion = last non-empty non-zero col
-  const rlen = playerRow.length;
-  let champCol = rlen-1;
-  while(champCol>0 && (!playerRow[champCol]||playerRow[champCol].trim()==='0'||playerRow[champCol].trim()==='')) champCol--;
-  const champ = playerRow[champCol]?.trim()||'?';
-  const third = playerRow[champCol-1]?.trim()||'?';
+  // Structure at end of each row (from Claude Cache notes):
+  // After all group matches + 1ro/2do per group:
+  // Terceros (8 teams), then Octavos (16 teams = 8 matches × 2 teams + pts),
+  // Cuartos (8 teams = 4 matches × 2), Semis (4 teams), Finalistas (2), 3er, Campeón
+  //
+  // Pattern found in data rows (last ~60 cols):
+  // [Terceros x8], 0, [Oct1T1,Oct1T2,Oct1pts, Oct2T1,Oct2T2,Oct2pts, ...×8], 0,
+  // [Cto1T1,Cto1T2,Cto1pts, ...×4], 0,
+  // [S1,S2,S3,S4], 0, [F1,F2], 0, [3er], [Camp]
 
-  // Semis are roughly 4 cols before champ
-  const s1 = playerRow[champCol-5]?.trim()||'?';
-  const s2 = playerRow[champCol-4]?.trim()||'?';
-  const s3 = playerRow[champCol-3]?.trim()||'?';
-  const s4 = playerRow[champCol-2]?.trim()||'?';
+  // Find champion (last meaningful non-zero non-numeric value)
+  let champIdx = row.length - 1;
+  while (champIdx > 0 && (!row[champIdx] || row[champIdx].trim() === '0' || row[champIdx].trim() === '')) champIdx--;
+  const champ = row[champIdx]?.trim() || '?';
+  const third = (() => {
+    let i = champIdx - 1;
+    while (i > 0 && (!row[i] || row[i].trim() === '0' || row[i].trim() === '')) i--;
+    return row[i]?.trim() || '?';
+  })();
 
-  const tm = t => `<div class="bracket-team ${t===champ?'winner':t==='?'?'tbd':''}">
-    <span>${t==='0'||!t?'?':t}</span>
+  // Work backwards from champion to find semis, cuartos, octavos
+  // Semis: 4 teams before third/champ block
+  // Find the block separator (usually '0') before champ
+  const getTeams = (fromIdx, count) => {
+    const teams = [];
+    let i = fromIdx;
+    let found = 0;
+    while (i >= 0 && found < count) {
+      const v = row[i]?.trim();
+      if (v && v !== '0' && !/^\d+$/.test(v) && v.length > 1) {
+        teams.unshift(v);
+        found++;
+      }
+      i--;
+    }
+    return teams;
+  };
+
+  // Parse bracket sections by scanning backwards
+  // Champion is at champIdx, 3er at ~champIdx-2
+  // Finalistas: 2 teams before 3er block
+  // Semis: 4 teams before finalistas
+  // Cuartos: 8 teams before semis
+  // Octavos: 16 teams before cuartos
+
+  // Simpler approach: find all non-numeric, non-zero values near the end
+  const endData = [];
+  for (let i = Math.max(0, champIdx - 80); i <= champIdx; i++) {
+    const v = row[i]?.trim();
+    if (v && v !== '0' && !/^\d+$/.test(v) && v.length > 1 && !['pts','R1','R2','R3','R4'].includes(v)) {
+      endData.push({ idx: i, val: v });
+    }
+  }
+
+  // From the known structure at end of row (Marcela example):
+  // ...Turquía,Suecia,Suiza,Cabo Verde,Escocia,Senegal,Jordania,Ghana (8 terceros)
+  // ,0, Alemania,Francia, Korea,Holanda, Inglaterra,España, USA,Bélgica, Brasil,Noruega, México,Croacia, Argentina,Egipto, Canadá,Portugal (16 oct = 8×2)
+  // ,0, Francia,Holanda, España,Bélgica, Brasil,Croacia, Argentina,Portugal (8 cto = 4×2)
+  // ,0, Francia,España, Croacia,Argentina (4 semis)
+  // ,0, España,Argentina (2 finalistas)
+  // ,0, Francia,España (3er,camp)
+
+  // Count back: champ at end, before it 3er, before that finalistas (2), semis (4), cuartos (8), octavos (16)
+  const all = endData.map(d => d.val);
+  const total = all.length;
+
+  // Last 2 = [3er, champ] (but we already have those)
+  // Before that: 2 finalistas
+  // Before that: 4 semis
+  // Before that: 8 cuartos
+  // Before that: 16 octavos
+  // Before that: 8 terceros
+
+  const camp2 = all.slice(-2);   // [3er, campeón]
+  const fin2  = all.slice(-4, -2); // 2 finalistas
+  const semi4 = all.slice(-8, -4); // 4 semifinalistas
+  const cto8  = all.slice(-16,-8); // 8 cuartofinalistas
+  const oct16 = all.slice(-32,-16);// 16 octavistas
+  const ter8  = all.slice(-40,-32);// 8 terceros lugares
+
+  const t = (val, isWinner=false) => {
+    const empty = !val || val === '?' || val === '0';
+    return `<div class="bt ${isWinner?'bw':''} ${empty?'btbd':''}">
+      <span>${empty ? '?' : val}</span>
+    </div>`;
+  };
+
+  // Build octavos pairs (8 matches)
+  const octPairs = [];
+  for (let i = 0; i < oct16.length; i += 2) octPairs.push([oct16[i]||'?', oct16[i+1]||'?']);
+  // Build cuartos pairs (4 matches)
+  const ctoPairs = [];
+  for (let i = 0; i < cto8.length; i += 2) ctoPairs.push([cto8[i]||'?', cto8[i+1]||'?']);
+  // Semis pairs
+  const semiPairs = [[semi4[0]||'?', semi4[1]||'?'], [semi4[2]||'?', semi4[3]||'?']];
+  const finalist1 = fin2[0]||'?', finalist2 = fin2[1]||'?';
+  const champion = camp2[1]||champ, thirdPlace = camp2[0]||third;
+
+  return `
+  <style>
+  .bracket-full{overflow-x:auto;padding:8px 0}
+  .bracket-scroll{display:flex;gap:0;min-width:900px;align-items:flex-start}
+  .bround{display:flex;flex-direction:column;min-width:130px;padding:0 6px}
+  .bround-title{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);text-align:center;margin-bottom:10px;font-weight:600;padding:4px 0;border-bottom:1px solid var(--border)}
+  .bmatches{display:flex;flex-direction:column;gap:6px}
+  .bmatch{background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:4px}
+  .bt{padding:5px 8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+  .bt:last-child{border-bottom:none}
+  .bw{background:rgba(0,200,83,.1);color:var(--verde);font-weight:600}
+  .btbd{color:var(--text3);font-style:italic}
+  .bchamp{text-align:center;padding:12px 8px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);border-radius:8px;margin-top:4px}
+  .bchamp .team{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--dorado);display:block;margin-top:4px}
+  .b3rd{text-align:center;padding:8px;background:rgba(205,127,50,.08);border:1px solid rgba(205,127,50,.3);border-radius:8px;margin-top:4px}
+  .b3rd .team{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#CD7F32;display:block;margin-top:3px}
+  .terceros-wrap{display:flex;flex-wrap:wrap;gap:4px;padding:8px}
+  .tercero-tag{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:10px;color:var(--text2)}
+  </style>
+
+  <div class="bracket-full">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:12px">📜 Terceros de grupo pronosticados por ${nombre.split(' ')[0]}:</div>
+  <div class="terceros-wrap" style="margin-bottom:16px">
+    ${ter8.length > 0 ? ter8.map(t => `<span class="tercero-tag">${t}</span>`).join('') : '<span style="color:var(--text3);font-size:11px">Sin datos</span>'}
+  </div>
+
+  <div class="bracket-scroll">
+    <div class="bround">
+      <div class="bround-title">Octavos (8)</div>
+      <div class="bmatches">
+        ${octPairs.map(([a,b]) => `<div class="bmatch">${t(a)}${t(b)}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="bround">
+      <div class="bround-title">Cuartos (4)</div>
+      <div class="bmatches" style="justify-content:space-around;height:100%">
+        ${ctoPairs.length > 0
+          ? ctoPairs.map(([a,b]) => `<div class="bmatch" style="margin-bottom:16px">${t(a)}${t(b)}</div>`).join('')
+          : '<div style="color:var(--text3);font-size:11px;padding:8px">Sin datos</div>'}
+      </div>
+    </div>
+
+    <div class="bround">
+      <div class="bround-title">Semis (2)</div>
+      <div class="bmatches" style="justify-content:space-around;height:100%">
+        <div class="bmatch" style="margin-bottom:32px">${t(semiPairs[0][0])}${t(semiPairs[0][1])}</div>
+        <div class="bmatch">${t(semiPairs[1][0])}${t(semiPairs[1][1])}</div>
+      </div>
+    </div>
+
+    <div class="bround">
+      <div class="bround-title">Final</div>
+      <div class="bmatches" style="justify-content:center;padding-top:20px">
+        <div class="bmatch">${t(finalist1, finalist1===champion)}${t(finalist2, finalist2===champion)}</div>
+      </div>
+    </div>
+
+    <div class="bround">
+      <div class="bround-title">🏆 Campeón</div>
+      <div style="padding-top:16px">
+        <div class="bchamp">
+          <span style="font-size:10px;color:var(--text3)">CAMPEÓN DEL MUNDO</span>
+          <span class="team">${champion === '?' ? '¿?' : champion}</span>
+        </div>
+        <div class="b3rd" style="margin-top:8px">
+          <span style="font-size:9px;color:var(--text3)">TERCER LUGAR</span>
+          <span class="team" style="font-size:13px">${thirdPlace === '?' ? '¿?' : thirdPlace}</span>
+        </div>
+      </div>
+    </div>
+  </div>
   </div>`;
-
-  return `<div class="bracket-wrap"><div class="bracket">
-    <div class="bracket-round">
-      <div class="bracket-round-title">Semifinales</div>
-      <div class="bracket-matches">
-        <div class="bracket-match">${tm(s1)}${tm(s2)}</div>
-        <div class="bracket-match">${tm(s3)}${tm(s4)}</div>
-      </div>
-    </div>
-    <div class="bracket-round">
-      <div class="bracket-round-title">Final</div>
-      <div class="bracket-matches" style="justify-content:center">
-        <div class="bracket-match">
-          ${tm(s1==='?'||s2==='?'?'?':(s1||'?'))}
-          ${tm(s3==='?'||s4==='?'?'?':(s3||'?'))}
-        </div>
-      </div>
-    </div>
-    <div class="bracket-round">
-      <div class="bracket-round-title">🏆 Campeón</div>
-      <div class="bracket-matches" style="justify-content:center">
-        <div class="bracket-match" style="border-color:var(--dorado)">
-          <div class="bracket-team winner" style="justify-content:center;font-size:13px;padding:12px">
-            🏆 ${champ}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="bracket-round">
-      <div class="bracket-round-title">🥉 Tercer lugar</div>
-      <div class="bracket-matches" style="justify-content:center">
-        <div class="bracket-match" style="border-color:#CD7F32">
-          <div class="bracket-team" style="justify-content:center;padding:12px;font-size:13px">
-            🥉 ${third==='0'||!third?'?':third}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div></div>`;
+}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -975,47 +1156,32 @@ function buildFacts() {
 // CRÓNICA — auto-generada por Claudinho
 // ══════════════════════════════════════════════════════════
 async function genComment() {
-  const today=new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('comment-date').textContent=today;
-  if(!players.length){document.getElementById('comment-body').textContent='Cargando datos...';return;}
+  const today = new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('comment-date').textContent = today;
+  if (!players.length) { document.getElementById('comment-body').textContent = 'Cargando datos...'; return; }
 
-  const s=[...players].sort((a,b)=>b.tot-a.tot);
-  const leader=s[0],last=s[s.length-1];
-  const avg=Math.round(players.reduce((x,p)=>x+p.tot,0)/players.length);
-  const topMarc=[...players].sort((a,b)=>b.marc-a.marc)[0];
+  const s = [...players].sort((a,b) => b.tot-a.tot);
+  const leader = s[0], last = s[s.length-1];
+  const avg = Math.round(players.reduce((x,p) => x+p.tot, 0) / players.length);
+  const topMarc = [...players].sort((a,b) => b.marc-a.marc)[0];
 
-  if(!apiKey){
-    // Fallback sin API
-    document.getElementById('comment-headline').textContent=`📰 ${leader.nombre.split(' ')[0]} lidera la quiniela con ${leader.tot} puntos`;
-    document.getElementById('comment-body').innerHTML=`
-      <strong>${leader.nombre}</strong> marcha al frente con <strong>${leader.tot} puntos</strong>. 
-      El promedio del grupo es de <strong>${avg} puntos</strong>.
-      <strong>${topMarc.nombre.split(' ')[0]}</strong> es el más afinado con ${topMarc.marc} marcadores exactos.
-      En el fondo, <strong>${last.nombre.split(' ')[0]}</strong> aguanta con ${last.tot} puntos.
-      <br><br><em>Para la crónica completa con análisis de Claudinho, agrega tu API key en la sección 🤖 Claudinho.</em>`;
-    return;
-  }
+  // Fallback inmediato mientras carga la IA
+  document.getElementById('comment-headline').textContent = `📰 ${leader.nombre.split(' ')[0]} lidera con ${leader.tot} puntos`;
+  document.getElementById('comment-body').innerHTML = `<strong>${leader.nombre}</strong> marcha al frente con <strong>${leader.tot} puntos</strong>. Promedio del grupo: <strong>${avg} pts</strong>. El más exacto: <strong>${topMarc.nombre.split(' ')[0]}</strong> con ${topMarc.marc} marcadores. <em>Cargando análisis completo de Claudinho...</em>`;
 
   try {
-    const context=getContext();
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:600,
-        system:`Eres Claudinho, un niño quinieleiro brasileño de 10 años con mucha energía y conocimiento de futbol. Escribes la crónica diaria de la quiniela WC 2026. Tu estilo: emocionante, con expresiones en portugués mezcladas naturalmente (minha gente, caramba, olha só, que loucura, nossa), emojis estratégicos, y siempre mencionando datos concretos. NO menciones dinero ni premios. Escribe en español con toques de portugués. Responde SOLO con JSON: {"headline":"...", "body":"..."}`,
-        messages:[{role:'user',content:`Hoy es ${today}. Escribe la crónica del día con estos datos:\n${context}\nMenciona al líder, movimientos interesantes, y algo que cambie la dinámica. JSON only.`}]
-      })
-    });
-    const data=await resp.json();
-    const txt=data.content?.[0]?.text||'{}';
-    const clean=txt.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
-    if(parsed.headline) document.getElementById('comment-headline').textContent=parsed.headline;
-    if(parsed.body) document.getElementById('comment-body').innerHTML=parsed.body;
+    const system = `Eres Claudinho, un niño quinieleiro brasileño de 10 años con mucha energía. Escribes la crónica diaria de la quiniela WC 2026. Estilo: emocionante, con portugués mezclado (minha gente, caramba, olha só, nossa), emojis estratégicos, datos concretos. NO menciones dinero ni premios. Di "quinieleiros". Responde SOLO con JSON válido sin markdown: {"headline":"...","body":"..."}`;
+    const txt = await callClaude(system, `Hoy es ${today}. Escribe la crónica con estos datos:\n${getContext()}\nJSON only, sin backticks.`, 600);
+    const clean = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    if (parsed.headline) document.getElementById('comment-headline').textContent = parsed.headline;
+    if (parsed.body) document.getElementById('comment-body').innerHTML = parsed.body;
   } catch(e) {
-    document.getElementById('comment-headline').textContent=`📰 Resumen del ${today}`;
-    document.getElementById('comment-body').innerHTML=`<strong>${leader.nombre}</strong> lidera con ${leader.tot} pts. Promedio: ${avg} pts. Más exacto: ${topMarc.nombre.split(' ')[0]} con ${topMarc.marc} marcadores.`;
+    console.warn('Crónica fallback:', e.message);
+    // Keep the fallback already shown
+    document.getElementById('comment-body').innerHTML = `<strong>${leader.nombre}</strong> lidera con <strong>${leader.tot} pts</strong>. 
+      El promedio está en ${avg} pts y <strong>${topMarc.nombre.split(' ')[0]}</strong> es el más afinado con ${topMarc.marc} marcadores exactos. 
+      En el fondo, <strong>${last.nombre.split(' ')[0]}</strong> aguanta con ${last.tot} pts. ¡El torneo está apenas comenzando!`;
   }
 }
 
@@ -1037,41 +1203,48 @@ TOP 10:\n${s.slice(0,10).map(p=>`#${p.rank} ${p.nombre}: ${p.tot}pts (marc:${p.m
 TODOS (nombre:total:rank):\n${players.map(p=>`${p.nombre}:${p.tot}:#${p.rank}`).join('\n')}`;
 }
 
-function saveKey() {
-  const k=document.getElementById('apikey-in').value.trim();
-  if(!k.startsWith('sk-ant-')){alert('La key debe empezar con sk-ant-...');return;}
-  apiKey=k; localStorage.setItem('claudinho_key',k);
-  document.getElementById('api-banner').style.display='none';
-  document.getElementById('bot-status').textContent='Online · Con datos en tiempo real';
-  appendMsg('bot','¡Minha gente! 🎉 ¡Ya estoy conectado! Ahora sí puedo analizar todo a fondo. ¿Qué quieres saber de la quiniela?');
-  genComment();
+async function callClaude(system, userMsg, maxTokens=800) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: system,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
 }
 
 async function sendChat() {
-  const inp=document.getElementById('chat-in');
-  const msg=inp.value.trim();
-  if(!msg)return;
-  appendMsg('user',msg); inp.value='';
-  document.getElementById('chat-send').disabled=true;
-  const tid=appendTyping();
+  const inp = document.getElementById('chat-in');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  appendMsg('user', msg); inp.value = '';
+  document.getElementById('chat-send').disabled = true;
+  const tid = appendTyping();
   try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:800,
-        system:`Eres Claudinho, un niño quinieleiro brasileño de 10 años, muy emocionado con el Mundial. Mezclas español con expresiones en portugués (minha gente, caramba, olha só, nossa, que loucura, eita). Usas emojis. Eres preciso con datos. Respuestas concisas (3-4 oraciones). NO menciones dinero ni premios. Di "quinieleiros" para referirte a los participantes.\n${getContext()}`,
-        messages:[{role:'user',content:msg}]
-      })
-    });
-    const data=await resp.json();
+    const system = `Eres Claudinho, un niño quinieleiro brasileño de 10 años, muy emocionado con el Mundial. Mezclas español con expresiones en portugués (minha gente, caramba, olha só, nossa, que loucura, eita). Usas emojis con moderación. Eres preciso con datos. Respuestas concisas (3-4 oraciones). NO menciones dinero ni premios. Di "quinieleiros" para referirte a los participantes.\n${getContext()}`;
+    const txt = await callClaude(system, msg);
     removeTyping(tid);
-    appendMsg('bot',data.content?.[0]?.text||'Caramba, tuve un problema técnico. ¡Intenta de nuevo!');
+    appendMsg('bot', txt);
   } catch(e) {
     removeTyping(tid);
-    appendMsg('bot','⚠️ Error de conexión. Verifica tu API key y vuelve a intentar.');
+    console.error('Claudinho error:', e);
+    appendMsg('bot', `⚠️ Error: ${e.message}. Revisa la consola para más detalles.`);
   }
-  document.getElementById('chat-send').disabled=false;
+  document.getElementById('chat-send').disabled = false;
 }
 
 function sendQ(t){document.getElementById('chat-in').value=t;sendChat();}
