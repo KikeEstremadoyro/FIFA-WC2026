@@ -408,11 +408,20 @@ let apiKey = 'sk-ant-api03-BKDQoC2yYheV4nOMmkfEVuek7ZGuS081hgqI1WuZAodwXF6YN9jMo
 // FETCH & PARSE CSV
 // ══════════════════════════════════════════════════════════
 async function fetchCSV(gid) {
-  const r = await fetch(csv(gid));
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const txt = await r.text();
-  if (txt.trim().startsWith('<!')) throw new Error('Devolvió HTML — verifica publicación');
-  return parseCSV(txt);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  try {
+    const r = await fetch(csv(gid), { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const txt = await r.text();
+    if (txt.trim().startsWith('<!')) throw new Error('El sheet no está publicado como CSV');
+    return parseCSV(txt);
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw new Error('Timeout — Google Sheets tardó demasiado');
+    throw e;
+  }
 }
 
 function parseCSV(txt) {
@@ -1283,21 +1292,38 @@ function show(id) {
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
+let isLoading = false;
+
 async function init() {
+  if (isLoading) return;
+  isLoading = true;
+  document.getElementById('tabla-cont').innerHTML = '<div class="loading"><div class="spinner"></div><p>Conectando con Google Sheets...</p></div>';
   try {
     await loadAll();
   } catch(e) {
-    document.getElementById('tabla-cont').innerHTML=`<div class="empty">
+    console.error('Init error:', e);
+    document.getElementById('tabla-cont').innerHTML = `<div class="empty">
       <div class="icon">⚠️</div>
       <p style="font-size:14px;font-weight:600;margin-bottom:8px">No se pudo conectar</p>
       <p style="font-size:12px;color:var(--text3);max-width:400px;margin:0 auto 14px">${e.message}</p>
-      <button class="btn" onclick="init()">🔄 Reintentar</button>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:14px">
+        Verifica que el sheet esté publicado: Archivo → Compartir → Publicar en la web → CSV
+      </p>
+      <button class="btn" onclick="isLoading=false;init()">🔄 Reintentar</button>
     </div>`;
+  } finally {
+    isLoading = false;
   }
 }
 
+// Auto-refresh cada 15 min solo en horario diurno y si no está cargando
 window.addEventListener('DOMContentLoaded', init);
-setInterval(()=>{const h=new Date().getHours();if(h>=7&&h<23)loadAll().catch(()=>{});},15*60*1000);
+setInterval(() => {
+  const h = new Date().getHours();
+  if (h >= 7 && h < 23 && !isLoading) {
+    loadAll().catch(e => console.warn('Auto-refresh falló:', e.message));
+  }
+}, 15 * 60 * 1000);
 </script>
 </body>
 </html>
