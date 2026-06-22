@@ -395,7 +395,8 @@ const GIDS = {
   quinielas: '1616528942',  // Quinielas 2026
   control:   '1834452765',  // TablaControl
 };
-const csv = gid => `${BASE}/pub?gid=${gid}&single=true&output=csv`;
+// Cache bust: añadir timestamp para evitar caché de Google
+const csv = gid => `${BASE}/pub?gid=${gid}&single=true&output=csv&_=${Math.floor(Date.now()/300000)}`;
 
 // ══════════════════════════════════════════════════════════
 // STATE
@@ -466,6 +467,11 @@ function detectCols(rows) {
 }
 
 async function loadAll() {
+  const setMsg = m => {
+    const el = document.getElementById('tabla-cont');
+    if (el) el.innerHTML = `<div class="loading"><div class="spinner"></div><p>${m}</p></div>`;
+  };
+
   // Load main table
   const attempts = [
     {gid:GIDS.tabla,   label:'FIFA WC 2026'},
@@ -474,11 +480,13 @@ async function loadAll() {
   let rows;
   for (const a of attempts) {
     try {
+      setMsg(`Conectando con ${a.label}...`);
       const r = await fetchCSV(a.gid);
       if (r.length > 5) { rows = r; workingGid = a.gid; console.log('✅',a.label); break; }
-    } catch(e) { console.warn('❌',a.label,e.message); }
+      else throw new Error('Respuesta vacía');
+    } catch(e) { console.warn('❌',a.label,e.message); setMsg(`${a.label} falló: ${e.message}`); }
   }
-  if (!rows) throw new Error('No se pudo conectar. Verifica que el sheet esté publicado como CSV.');
+  if (!rows) throw new Error('No se pudo conectar con ninguna pestaña del sheet.');
 
   const C = detectCols(rows);
   const pls = [];
