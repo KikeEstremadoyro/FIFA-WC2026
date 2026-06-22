@@ -391,12 +391,11 @@ footer{text-align:center;padding:20px;color:var(--text3);font-size:11px;border-t
 // ══════════════════════════════════════════════════════════
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSx33hImGNFAoNxBKi7JD7ZqGMoVyeMNvSD6j1JdMxo38oB61xgTYvw3YLUImn-dMwZ-j5gdHMcprh5';
 const GIDS = {
-  tabla:     '2061338906',  // FIFA WC 2026
-  quinielas: '1616528942',  // Quinielas 2026
-  control:   '1834452765',  // TablaControl
+  tabla:     '2061338906',
+  quinielas: '1616528942',
+  control:   '1834452765',
 };
-// Cache bust: añadir timestamp para evitar caché de Google
-const csv = gid => `${BASE}/pub?gid=${gid}&single=true&output=csv&_=${Math.floor(Date.now()/300000)}`;
+const csvUrl = gid => `${BASE}/pub?gid=${gid}&single=true&output=csv`;
 
 // ══════════════════════════════════════════════════════════
 // STATE
@@ -406,23 +405,57 @@ let quinielaRows = [];
 let apiKey = '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';
 
 // ══════════════════════════════════════════════════════════
-// FETCH & PARSE CSV
+// FETCH — 3 estrategias anti-CORS en cascada
 // ══════════════════════════════════════════════════════════
-async function fetchCSV(gid) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+async function tryFetch(url, timeoutMs=10000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const r = await fetch(csv(gid), { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const txt = await r.text();
-    if (txt.trim().startsWith('<!')) throw new Error('El sheet no está publicado como CSV');
-    return parseCSV(txt);
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    return r;
   } catch(e) {
-    clearTimeout(timeout);
-    if (e.name === 'AbortError') throw new Error('Timeout — Google Sheets tardó demasiado');
+    clearTimeout(t);
     throw e;
   }
+}
+
+function isValidCSV(txt) {
+  return txt && txt.length > 50 && !txt.trim().startsWith('<!') && !txt.trim().startsWith('{');
+}
+
+async function fetchCSV(gid) {
+  const direct = csvUrl(gid);
+
+  // 1️⃣ Directo (funciona en algunos contextos)
+  try {
+    const r = await tryFetch(direct, 7000);
+    if (r.ok) {
+      const txt = await r.text();
+      if (isValidCSV(txt)) { console.log('✅ Directo'); return parseCSV(txt); }
+    }
+  } catch(e) { console.warn('Directo falló:', e.message); }
+
+  // 2️⃣ allorigins.win proxy
+  try {
+    const r = await tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(direct)}`, 10000);
+    if (r.ok) {
+      const data = await r.json();
+      const txt = data.contents || '';
+      if (isValidCSV(txt)) { console.log('✅ allorigins'); return parseCSV(txt); }
+    }
+  } catch(e) { console.warn('allorigins falló:', e.message); }
+
+  // 3️⃣ corsproxy.io
+  try {
+    const r = await tryFetch(`https://corsproxy.io/?${encodeURIComponent(direct)}`, 10000);
+    if (r.ok) {
+      const txt = await r.text();
+      if (isValidCSV(txt)) { console.log('✅ corsproxy.io'); return parseCSV(txt); }
+    }
+  } catch(e) { console.warn('corsproxy.io falló:', e.message); }
+
+  throw new Error('Los 3 métodos de conexión fallaron. Intenta recargar la página.');
 }
 
 function parseCSV(txt) {
@@ -469,10 +502,9 @@ function detectCols(rows) {
 async function loadAll() {
   const setMsg = m => {
     const el = document.getElementById('tabla-cont');
-    if (el) el.innerHTML = `<div class="loading"><div class="spinner"></div><p>${m}</p></div>`;
+    if (el) el.innerHTML = `<div class="loading"><div class="spinner"></div><p style="text-align:center">${m}</p></div>`;
   };
 
-  // Load main table
   const attempts = [
     {gid:GIDS.tabla,   label:'FIFA WC 2026'},
     {gid:GIDS.control, label:'TablaControl'},
@@ -480,13 +512,16 @@ async function loadAll() {
   let rows;
   for (const a of attempts) {
     try {
-      setMsg(`Conectando con ${a.label}...`);
+      setMsg(`Conectando con ${a.label}…<br><small style="color:var(--text3)">Probando métodos de conexión</small>`);
       const r = await fetchCSV(a.gid);
-      if (r.length > 5) { rows = r; workingGid = a.gid; console.log('✅',a.label); break; }
+      if (r.length > 5) { rows = r; workingGid = a.gid; break; }
       else throw new Error('Respuesta vacía');
-    } catch(e) { console.warn('❌',a.label,e.message); setMsg(`${a.label} falló: ${e.message}`); }
+    } catch(e) {
+      console.warn('❌', a.label, e.message);
+      setMsg(`⚠️ ${a.label}: ${e.message}<br><small>Intentando siguiente…</small>`);
+    }
   }
-  if (!rows) throw new Error('No se pudo conectar con ninguna pestaña del sheet.');
+  if (!rows) throw new Error('No se pudo conectar. Verifica tu conexión a internet.');
 
   const C = detectCols(rows);
   const pls = [];
