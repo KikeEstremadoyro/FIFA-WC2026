@@ -458,6 +458,15 @@ async function loadAll() {
   document.getElementById('search-t').value=''; // limpiar búsqueda al recargar
   sortDir={col:'tot',asc:false}; // siempre ordenar por total al cargar
   players.sort((a,b)=>b.tot-a.tot); // ordenar antes de renderizar
+  // Recalcular rank desde pts reales (no confiar en el rank del sheet)
+  let lastTot=null, lastRank=0, countSame=0;
+  players.forEach((p,i)=>{
+    if(p.tot===lastTot){ countSame++; p.rank=lastRank; }
+    else { lastRank=i+1; p.rank=lastRank; lastTot=p.tot; countSame=1; }
+  });
+  // Recalcular dif respecto al líder real
+  const leaderTot = players[0]?.tot||0;
+  players.forEach(p=>{ p.dif=p.tot-leaderTot; });
   renderTabla(players);
   updateStats();
   const now=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
@@ -488,7 +497,19 @@ function updateStats() {
 // TABLA
 // ══════════════════════════════════════════════
 function renderTabla(pls) {
-  const maxRank=Math.max(...pls.map(p=>p.rank));
+  // Calcular posición dinámica según el orden actual (no p.rank del sheet)
+  // Si hay empate en el valor ordenado, comparten posición
+  const sortCol = sortDir.col;
+  const getVal = p => sortCol==='nombre' ? p.nombre : p[sortCol]??0;
+  let dynRank=[], lastVal=null, lastPos=0;
+  pls.forEach((p,i)=>{
+    const v=getVal(p);
+    if(i===0||v!==lastVal){ lastPos=i+1; lastVal=v; }
+    dynRank.push(lastPos);
+  });
+  const maxPos=dynRank[dynRank.length-1]||1;
+  const isOnlyTot = sortCol==='tot' || sortCol==='rank';
+
   document.getElementById('tabla-cont').innerHTML=`<table>
     <thead><tr>
       <th onclick="sortByCol('rank')" style="position:sticky;left:0;background:var(--bg2);z-index:2">Pos</th>
@@ -502,13 +523,14 @@ function renderTabla(pls) {
       <th onclick="sortByCol('fg')">Fase G.</th>
     </tr></thead>
     <tbody>
-    ${pls.map(p=>{
-      const top3=p.rank<=3, isLast=p.rank>=maxRank;
-      const medal=p.rank===1?'🥇':p.rank===2?'🥈':p.rank===3?'🥉':isLast?'🔴':'';
-      const rc=p.rank===1?'r1c':p.rank===2?'r2c':p.rank===3?'r3c':isLast?'rlc':'';
+    ${pls.map((p,i)=>{
+      const pos=dynRank[i];
+      const top3=pos<=3, isLast=pos>=maxPos&&pls.length>3;
+      const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':isLast?'🔴':'';
+      const rc=pos===1?'r1c':pos===2?'r2c':pos===3?'r3c':isLast?'rlc':'';
       const difStr=p.dif===0?'LÍDER':(p.dif<0?'-':'+')+ String(Math.abs(p.dif));
       return `<tr class="${top3?'ztop':isLast?'zlast':''}" onclick="quickMQ('${p.nombre.replace(/'/g,"\\'")}')">
-        <td style="position:sticky;left:0;background:${top3?'rgba(255,215,0,0.04)':isLast?'rgba(229,57,53,0.04)':'var(--bg2)'};z-index:1"><span class="rank ${rc}">${medal||('#'+p.rank)}</span></td>
+        <td style="position:sticky;left:0;background:${top3?'rgba(255,215,0,0.04)':isLast?'rgba(229,57,53,0.04)':'var(--bg2)'};z-index:1"><span class="rank ${rc}">${medal||('#'+pos)}</span></td>
         <td style="font-weight:500;font-size:12px;position:sticky;left:36px;background:${top3?'rgba(255,215,0,0.04)':isLast?'rgba(229,57,53,0.04)':'var(--bg2)'};z-index:1">${p.nombre}</td>
         <td class="pts">${p.tot}</td>
         <td class="dif ${p.dif===0?'zero':''}">${difStr}</td>
@@ -629,13 +651,20 @@ function buildMatchCards(nombre){
   if(!row) return `<div class="card" style="margin-top:14px"><div style="padding:16px;font-size:13px;color:var(--text3)">📋 Pronósticos cargando...</div></div>`;
 
   let html='<div style="margin-top:14px">';
+  // Clasificados 1ro/2do por grupo (necesario dentro del forEach para tabla de posiciones)
+  let col1ro=[];
+  {
+    const hdrR=quinielaRows.find(r=>r.some(c=>c&&c.trim()==='1ro'));
+    if(hdrR) hdrR.forEach((v,i)=>{if(v&&v.trim()==='1ro')col1ro.push(i);});
+  }
+
   let col=17; // columna inicio partidos en Quinielas 2026
   const groups=Object.entries(GRUPOS_INFO);
 
   // Contadores reales calculados desde partidos individuales
   let exactosReal=0, resultadosReal=0, ptsMarcReal=0, ptsResReal=0;
 
-  groups.forEach(([letra,gInfo])=>{
+  groups.forEach(([letra,gInfo],gi)=>{
     html+=`<div class="ggroup"><div class="gg-title">Grupo ${letra}</div><div class="matches-grid">`;
     gInfo.matches.forEach((matchName,mi)=>{
       const baseCol=col+mi*3;
@@ -688,14 +717,203 @@ function buildMatchCards(nombre){
         </div>
       </div>`;
     });
+
+    // ── Tabla de posiciones del grupo ─────────────────────────────
+    // Calcular PJ, PG, PE, PP, GF, GC, DIF, PTS desde los 6 partidos
+    const teams = gInfo.teams;
+    const pts_t = {}, pj={}, pg={}, pe={}, pp={}, gf={}, gc={};
+    teams.forEach(t=>{ pts_t[t]=0;pj[t]=0;pg[t]=0;pe[t]=0;pp[t]=0;gf[t]=0;gc[t]=0; });
+    
+    // Determinar si los partidos están jugados (hay resultado real)
+    let grupoTerminado = false;
+    let partidosJugados = 0;
+    gInfo.matches.forEach((matchName,mi)=>{
+      const baseCol=col+mi*3;
+      const rr1=realResults[baseCol]?.trim()||'';
+      const rr2=realResults[baseCol+1]?.trim()||'';
+      if(rr1!==''&&rr2!==''&&/^\d+$/.test(rr1)&&/^\d+$/.test(rr2)){
+        partidosJugados++;
+        const t=matchName.split(' vs ');
+        const g1=parseInt(rr1), g2=parseInt(rr2);
+        const eq1=t[0], eq2=t[1];
+        if(pts_t[eq1]===undefined){pts_t[eq1]=0;pj[eq1]=0;pg[eq1]=0;pe[eq1]=0;pp[eq1]=0;gf[eq1]=0;gc[eq1]=0;}
+        if(pts_t[eq2]===undefined){pts_t[eq2]=0;pj[eq2]=0;pg[eq2]=0;pe[eq2]=0;pp[eq2]=0;gf[eq2]=0;gc[eq2]=0;}
+        pj[eq1]++;pj[eq2]++;
+        gf[eq1]+=g1;gc[eq1]+=g2;gf[eq2]+=g2;gc[eq2]+=g1;
+        if(g1>g2){pg[eq1]++;pp[eq2]++;pts_t[eq1]+=3;}
+        else if(g1<g2){pg[eq2]++;pp[eq1]++;pts_t[eq2]+=3;}
+        else{pe[eq1]++;pe[eq2]++;pts_t[eq1]++;pts_t[eq2]++;}
+      }
+    });
+    grupoTerminado = partidosJugados >= 6;
+
+    if(partidosJugados > 0){
+      // Ordenar tabla del quinielero: pts > dif > gf
+      const sorted = teams.slice().sort((a,b)=>{
+        if(pts_t[b]!==pts_t[a]) return pts_t[b]-pts_t[a];
+        const da=(gf[a]-gc[a]), db=(gf[b]-gc[b]);
+        if(db!==da) return db-da;
+        return gf[b]-gf[a];
+      });
+      
+      // Tabla de posiciones REALES del mismo grupo (desde realResults)
+      const rpts={},rpj={},rpg={},rpe={},rpp={},rgf={},rgc={};
+      teams.forEach(t=>{rpts[t]=0;rpj[t]=0;rpg[t]=0;rpe[t]=0;rpp[t]=0;rgf[t]=0;rgc[t]=0;});
+      gInfo.matches.forEach((matchName,mi)=>{
+        const bc=col+mi*3;
+        const rr1=realResults[bc]?.trim()||'', rr2=realResults[bc+1]?.trim()||'';
+        if(rr1!==''&&rr2!==''&&/^\d+$/.test(rr1)&&/^\d+$/.test(rr2)){
+          const t=matchName.split(' vs '),g1=parseInt(rr1),g2=parseInt(rr2);
+          rpj[t[0]]++;rpj[t[1]]++;rgf[t[0]]+=g1;rgc[t[0]]+=g2;rgf[t[1]]+=g2;rgc[t[1]]+=g1;
+          if(g1>g2){rpg[t[0]]++;rpp[t[1]]++;rpts[t[0]]+=3;}
+          else if(g1<g2){rpg[t[1]]++;rpp[t[0]]++;rpts[t[1]]+=3;}
+          else{rpe[t[0]]++;rpe[t[1]]++;rpts[t[0]]++;rpts[t[1]]++;}
+        }
+      });
+      const rsorted=teams.slice().sort((a,b)=>{
+        if(rpts[b]!==rpts[a])return rpts[b]-rpts[a];
+        const da=rgf[a]-rgc[a],db=rgf[b]-rgc[b];
+        if(db!==da)return db-da;
+        return rgf[b]-rgf[a];
+      });
+
+      // ¿Qué pronosticó el quinielero para 1ro y 2do de este grupo?
+      const col1 = col1ro[gi];
+      const prono1 = col1!==undefined ? (row[col1]?.trim()||'') : '';
+      const prono2 = col1!==undefined ? (row[col1+1]?.trim()||'') : '';
+
+      const mkTable=(sortedList,ptsMap,pgMap,peMap,ppMap,gfMap,gcMap,isReal)=>{
+        const title=isReal?`Real ${grupoTerminado?'· Final':'· En curso'}`:`Mi pronóstico`;
+        const color=isReal?'var(--azul)':'var(--naranja)';
+        return `<div style="flex:1;min-width:0">
+          <div style="font-size:9px;font-weight:600;color:${color};padding:2px 4px;margin-bottom:2px">${title}</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:2px 4px;color:var(--text2);font-weight:600">#</th>
+              <th style="padding:2px 4px;text-align:left;color:var(--text2);font-weight:600">Equipo</th>
+              <th style="padding:2px 4px;text-align:center;color:var(--text2);font-weight:600">G</th>
+              <th style="padding:2px 4px;text-align:center;color:var(--text2);font-weight:600">E</th>
+              <th style="padding:2px 4px;text-align:center;color:var(--text2);font-weight:600">P</th>
+              <th style="padding:2px 4px;text-align:center;color:var(--dorado);font-weight:700">PTS</th>
+            </tr></thead>
+            <tbody>${sortedList.map((t,i)=>{
+              const clasifColor=grupoTerminado?(i<2?'var(--verde)':'var(--rojo)'):(i<2?'var(--azul)':'var(--text2)');
+              const bg=grupoTerminado?(i<2?'rgba(0,200,83,0.06)':'rgba(229,57,53,0.04)'):(i<2?'rgba(66,133,244,0.05)':'transparent');
+              // Solo en "mi pronóstico": marcar si coincide con predicción
+              const matchProno=!isReal&&((i===0&&t===prono1)||(i===1&&t===prono2))?'✓':'';
+              return `<tr style="border-bottom:1px solid var(--border);background:${bg}">
+                <td style="padding:2px 4px;color:${clasifColor};font-weight:600">${i+1}</td>
+                <td style="padding:2px 4px;color:${clasifColor};font-size:9px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t}${matchProno?` <span style="color:var(--verde)">✓</span>`:''}</td>
+                <td style="padding:2px 4px;text-align:center;color:var(--text2)">${pgMap[t]}</td>
+                <td style="padding:2px 4px;text-align:center;color:var(--text2)">${peMap[t]}</td>
+                <td style="padding:2px 4px;text-align:center;color:var(--text2)">${ppMap[t]}</td>
+                <td style="padding:2px 4px;text-align:center;font-weight:700;color:var(--dorado)">${ptsMap[t]}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>`;
+      };
+
+      html+=`<div style="margin-top:8px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div style="padding:3px 8px;background:var(--bg4);font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Tabla Grupo ${letra}</div>
+        <div style="display:flex;gap:8px;padding:6px">
+          ${mkTable(rsorted,rpts,rpg,rpe,rpp,rgf,rgc,true)}
+          <div style="width:1px;background:var(--border)"></div>
+          ${mkTable(sorted,pts_t,pg,pe,pp,gf,gc,false)}
+        </div>
+      </div>`;
+    }
+
     html+='</div></div>';
     col+=18;
   });
 
-  // Clasificados 1ro/2do por grupo
-  let col1ro=[];
-  const hdr=quinielaRows.find(r=>r.some(c=>c&&c.trim()==='1ro'));
-  if(hdr) hdr.forEach((v,i)=>{if(v&&v.trim()==='1ro')col1ro.push(i);});
+  // ── Terceros lugares ──────────────────────────────────────────────
+  // Calcular el 3ro real de cada grupo desde los partidos (ya tenemos los datos arriba)
+  // Recalcular para todos los grupos
+  {
+    let col2=17;
+    const tercerosData=[];
+    Object.entries(GRUPOS_INFO).forEach(([letra,gInfo])=>{
+      const teams2=gInfo.teams;
+      const pts2={},pj2={},gf2={},gc2={};
+      teams2.forEach(t=>{pts2[t]=0;pj2[t]=0;gf2[t]=0;gc2[t]=0;});
+      let played=0;
+      gInfo.matches.forEach((mn,mi)=>{
+        const bc=col2+mi*3;
+        const r1=realResults[bc]?.trim()||'', r2=realResults[bc+1]?.trim()||'';
+        if(r1!==''&&r2!==''&&/^\d+$/.test(r1)&&/^\d+$/.test(r2)){
+          played++;
+          const t=mn.split(' vs '), g1=parseInt(r1), g2=parseInt(r2);
+          [t[0],t[1]].forEach((eq,idx)=>{
+            if(pts2[eq]===undefined){pts2[eq]=0;pj2[eq]=0;gf2[eq]=0;gc2[eq]=0;}
+          });
+          pj2[t[0]]++;pj2[t[1]]++;
+          gf2[t[0]]+=g1;gc2[t[0]]+=g2;gf2[t[1]]+=g2;gc2[t[1]]+=g1;
+          if(g1>g2)pts2[t[0]]+=3; else if(g1<g2)pts2[t[1]]+=3; else{pts2[t[0]]++;pts2[t[1]]++;}
+        }
+      });
+      if(played>=6){
+        const sorted2=teams2.slice().sort((a,b)=>{
+          if(pts2[b]!==pts2[a])return pts2[b]-pts2[a];
+          const da=gf2[a]-gc2[a],db=gf2[b]-gc2[b];
+          if(db!==da)return db-da;
+          return gf2[b]-gf2[a];
+        });
+        const ter=sorted2[2];
+        tercerosData.push({letra,equipo:ter,pts:pts2[ter],dif:gf2[ter]-gc2[ter],gf:gf2[ter]});
+      }
+      col2+=18;
+    });
+
+    if(tercerosData.length>0){
+      // Ordenar terceros: pts > dif > gf
+      tercerosData.sort((a,b)=>{
+        if(b.pts!==a.pts)return b.pts-a.pts;
+        if(b.dif!==a.dif)return b.dif-a.dif;
+        return b.gf-a.gf;
+      });
+      // Los pronósticos de terceros del quinielero
+      const ter3Pronosticos=[];
+      [269,272,275,278,281,284,287,290].forEach(tc=>{
+        const v=row[tc]?.trim();
+        if(v&&v!=='0')ter3Pronosticos.push(v);
+      });
+      html+=`<div style="margin:16px 0 8px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:var(--dorado);margin-bottom:8px">🥉 Terceros Lugares</div>
+        <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:10px">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:3px 8px;text-align:left;color:var(--text2);font-weight:600">#</th>
+              <th style="padding:3px 8px;text-align:left;color:var(--text2);font-weight:600">Equipo</th>
+              <th style="padding:3px 8px;text-align:left;color:var(--text2);font-weight:600">Grupo</th>
+              <th style="padding:3px 8px;text-align:center;color:var(--text2);font-weight:600">DIF</th>
+              <th style="padding:3px 8px;text-align:center;color:var(--dorado);font-weight:700">PTS</th>
+              <th style="padding:3px 8px;text-align:center;color:var(--text2);font-weight:600">Pronóstico</th>
+            </tr></thead>
+            <tbody>${tercerosData.map((d,i)=>{
+              const clsf=i<8;
+              const color=clsf?'var(--verde)':'var(--rojo)';
+              const bg=clsf?'rgba(0,200,83,0.05)':'rgba(229,57,53,0.04)';
+              const enProno=ter3Pronosticos.includes(d.equipo);
+              const pronoBadge=enProno?`<span style="color:var(--verde);font-weight:600">✓ sí</span>`:`<span style="color:var(--rojo)">✗ no</span>`;
+              return `<tr style="border-bottom:1px solid var(--border);background:${bg}">
+                <td style="padding:3px 8px;color:${color};font-weight:700">${i+1}${i<8?'✓':''}</td>
+                <td style="padding:3px 8px;color:${color};font-weight:600">${d.equipo}</td>
+                <td style="padding:3px 8px;color:var(--text2)">${d.letra}</td>
+                <td style="padding:3px 8px;text-align:center;color:${d.dif>0?'var(--verde)':d.dif<0?'var(--rojo)':'var(--text2)'}">${d.dif>0?'+':''}${d.dif}</td>
+                <td style="padding:3px 8px;text-align:center;font-weight:700;color:var(--dorado)">${d.pts}</td>
+                <td style="padding:3px 8px;text-align:center">${pronoBadge}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+          ${tercerosData.length<12?`<div style="padding:3px 8px;font-size:8px;color:var(--text3)">Solo grupos con los 6 partidos jugados · Top 8 clasifican</div>`:''}
+        </div>
+      </div>`; 
+    }
+  }
+
+  // col1ro ya definido arriba
 
   if(col1ro.length>=12){
     const gLetras=['A','B','C','D','E','F','G','H','I','J','K','L'];
