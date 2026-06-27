@@ -54,7 +54,7 @@ tbody td{padding:10px 14px;font-size:12px;white-space:nowrap}
 .pts{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--verde)}
 .dif{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text)}.dif.zero{color:var(--dorado)}
 .ztop{background:rgba(255,215,0,0.03)}.zlast{background:rgba(229,57,53,0.03)}
-@media(max-width:480px){.hide-mob{display:none}}
+@media(max-width:0px){.hide-mob{display:none}}
 .btn{background:var(--verde);color:#000;border:none;padding:9px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
 .btn:hover{background:#00e85f}
 .search-big{max-width:480px;margin:0 auto 28px;display:flex;gap:10px}
@@ -314,7 +314,7 @@ function updateTorneoSets(){
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let players = [], sortDir = {col:'rank',asc:true};
+let players = [], sortDir = {col:'tot',asc:false};
 let quinielaRows = [], isLoading = false;
 let realResults = []; // fila 3 de TablaControl: resultados reales partido a partido
 let apiKey = localStorage.getItem('claudinho_key') || '';
@@ -493,10 +493,10 @@ function renderTabla(pls) {
       <th onclick="sortByCol('nombre')" style="position:sticky;left:36px;background:var(--bg2);z-index:2">Nombre</th>
       <th onclick="sortByCol('tot')" class="${sortDir.col==='tot'?'sorted':''}">Total</th>
       <th onclick="sortByCol('dif')">Dif</th>
-      <th onclick="sortByCol('r3')" class="hide-mob">R3</th>
+      <th onclick="sortByCol('r3')">R3</th>
       <th onclick="sortByCol('r2')">R2</th>
-      <th onclick="sortByCol('r1')" class="hide-mob">R1</th>
-      <th onclick="sortByCol('gpos')" class="hide-mob">Grupos</th>
+      <th onclick="sortByCol('r1')">R1</th>
+      <th onclick="sortByCol('gpos')">Grupos</th>
       <th onclick="sortByCol('fg')">Fase G.</th>
     </tr></thead>
     <tbody>
@@ -510,9 +510,9 @@ function renderTabla(pls) {
         <td style="font-weight:500;font-size:12px;position:sticky;left:36px;background:${top3?'rgba(255,215,0,0.04)':isLast?'rgba(229,57,53,0.04)':'var(--bg2)'};z-index:1">${p.nombre}</td>
         <td class="pts">${p.tot}</td>
         <td class="dif ${p.dif===0?'zero':''}">${difStr}</td>
-        <td class="hide-mob" style="font-family:JetBrains Mono,monospace;font-size:11px">${p.r3}</td>
+        <td style="font-family:JetBrains Mono,monospace;font-size:11px">${p.r3}</td>
         <td style="font-family:JetBrains Mono,monospace;font-size:11px">${p.r2}</td>
-        <td class="hide-mob" style="font-family:JetBrains Mono,monospace;font-size:11px">${p.r1}</td>
+        <td style="font-family:JetBrains Mono,monospace;font-size:11px">${p.r1}</td>
         <td class="hide-mob" style="font-family:JetBrains Mono,monospace;font-size:11px;">${p.gpos}</td>
         <td style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--verde)">${p.fg}</td>
       </tr>`;
@@ -1711,6 +1711,13 @@ function show(id){
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.getElementById('btn-'+id).classList.add('active');
+  // Limpiar search y resetear orden al volver a Tabla
+  if(id==='tabla'){
+    const si=document.getElementById('search-t');
+    if(si) si.value='';
+    sortDir={col:'tot',asc:false};
+    if(players.length) renderTabla(players);
+  }
   if(id==='nominados'&&players.length)buildNominados();
   if(id==='profetas'&&quinielaRows.length)buildProfetas();
   if(id==='grupos'&&quinielaRows.length)buildGrupos();
