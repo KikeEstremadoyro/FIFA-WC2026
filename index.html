@@ -456,6 +456,8 @@ async function loadAll() {
   } catch(e) { console.warn('No se cargaron resultados reales:', e.message); }
 
   document.getElementById('search-t').value=''; // limpiar búsqueda al recargar
+  sortDir={col:'tot',asc:false}; // siempre ordenar por total al cargar
+  players.sort((a,b)=>b.tot-a.tot); // ordenar antes de renderizar
   renderTabla(players);
   updateStats();
   const now=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
@@ -523,8 +525,8 @@ function renderTabla(pls) {
 function sortByCol(col) {
   if(sortDir.col===col) sortDir.asc=!sortDir.asc;
   else{sortDir.col=col;sortDir.asc=(col==='rank'||col==='nombre');}
-  const q=document.getElementById('search-t').value.toLowerCase();
-  let pls=q?players.filter(p=>p.nombre.toLowerCase().includes(q)):[...players];
+  document.getElementById('search-t').value=''; // limpiar filtro al ordenar
+  let pls=[...players];
   if(col==='nombre') pls.sort((a,b)=>sortDir.asc?a.nombre.localeCompare(b.nombre):b.nombre.localeCompare(a.nombre));
   else pls.sort((a,b)=>sortDir.asc?a[col]-b[col]:b[col]-a[col]);
   renderTabla(pls);
