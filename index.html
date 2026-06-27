@@ -178,7 +178,7 @@ footer{text-align:center;padding:20px;color:var(--text3);font-size:11px;border-t
     <div class="card-hdr"><div class="card-title">Clasificación General</div><div style="font-size:11px;color:var(--text2)">Toca columna para ordenar · Toca fila para ver quiniela</div></div>
     <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
       <div class="srow">
-        <input class="si" type="text" id="search-t" placeholder="🔍 Buscar nombre..." oninput="filterT()">
+        <input class="si" type="text" id="search-t" placeholder="🔍 Buscar nombre..." oninput="filterT()" autocomplete="off" autocorrect="off" spellcheck="false">
         <select class="ssel" onchange="sortByCol(this.value)">
           <option value="rank">Por posición</option>
           <option value="tot">Por total</option>
@@ -522,16 +522,20 @@ function renderTabla(pls) {
     </tbody></table>`;
 }
 
+let _sortingNow=false;
 function sortByCol(col) {
   if(sortDir.col===col) sortDir.asc=!sortDir.asc;
   else{sortDir.col=col;sortDir.asc=(col==='rank'||col==='nombre');}
-  document.getElementById('search-t').value=''; // limpiar filtro al ordenar
+  _sortingNow=true;
+  const si=document.getElementById('search-t');
+  si.value=''; si.blur();
   let pls=[...players];
   if(col==='nombre') pls.sort((a,b)=>sortDir.asc?a.nombre.localeCompare(b.nombre):b.nombre.localeCompare(a.nombre));
   else pls.sort((a,b)=>sortDir.asc?a[col]-b[col]:b[col]-a[col]);
   renderTabla(pls);
+  setTimeout(()=>{_sortingNow=false;},200);
 }
-function filterT(){const q=document.getElementById('search-t').value.toLowerCase();renderTabla(q?players.filter(p=>p.nombre.toLowerCase().includes(q)):players);}
+function filterT(){if(_sortingNow)return;const q=document.getElementById('search-t').value.toLowerCase();renderTabla(q?players.filter(p=>p.nombre.toLowerCase().includes(q)):players);}
 
 // ══════════════════════════════════════════════
 // MI QUINIELA
