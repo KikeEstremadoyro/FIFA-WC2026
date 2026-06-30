@@ -12,6 +12,7 @@
   --bg:#f8f9fa;--bg2:#ffffff;--bg3:#eef0f3;--bg4:#e9ecef;
   --border:#dee2e6;
   --text:#1a1a2e;--text2:#495057;--text3:#868e96;
+  --r:12px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
@@ -56,13 +57,13 @@ tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor
 tbody tr:hover{background:var(--bg3)}tbody tr:last-child{border-bottom:none}
 tbody td{padding:10px 14px;font-size:12px;white-space:nowrap}
 .rank{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
-.r1c{color:var(--dorado)}.r2c{color:#C0C0C0}.r3c{color:#CD7F32}.rlc{color:var(--rojo)}
+.r1c{color:var(--dorado)}.r2c{color:#8a8a8a}.r3c{color:#CD7F32}.rlc{color:var(--rojo)}
 .pts{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--verde)}
 .dif{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text)}.dif.zero{color:var(--dorado)}
 .ztop{background:rgba(255,215,0,0.03)}.zlast{background:rgba(229,57,53,0.03)}
 @media(max-width:0px){.hide-mob{display:none}}
-.btn{background:var(--verde);color:#000;border:none;padding:9px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
-.btn:hover{background:#00e85f}
+.btn{background:var(--verde);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+.btn:hover{background:var(--verde-dark)}
 .search-big{max-width:480px;margin:0 auto 28px;display:flex;gap:10px}
 .search-big input{flex:1}
 .profile-card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:18px}
@@ -101,7 +102,7 @@ tbody td{padding:10px 14px;font-size:12px;white-space:nowrap}
 .chat-in-row{background:var(--bg3);border:1px solid rgba(0,200,83,.2);border-radius:0 0 var(--r) var(--r);padding:14px;display:flex;gap:10px}
 .chat-in{flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
 .chat-in:focus{border-color:var(--verde)}.chat-in::placeholder{color:var(--text3)}
-.chat-send{background:var(--verde);color:#000;border:none;padding:9px 14px;border-radius:7px;cursor:pointer;font-weight:700;font-size:15px}
+.chat-send{background:var(--verde);color:#fff;border:none;padding:9px 14px;border-radius:7px;cursor:pointer;font-weight:700;font-size:15px}
 .chat-send:disabled{background:var(--text3);cursor:default}
 .typing{display:flex;gap:4px;align-items:center;padding:2px 0}
 .typing span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:typ .8s infinite}
@@ -312,16 +313,17 @@ const csvUrl = gid => `${BASE}/pub?gid=${gid}&single=true&output=csv`;
 // pero se inicializan con los conocidos actualmente
 let ELIMINADOS = new Set([
   // Solo los 17 equipos eliminados confirmados al 28-jun-26
+  // Nombres deben coincidir EXACTAMENTE con los usados en GRUPOS_INFO
   'Haití','Haiti',
-  'Túnez','Tunez',
-  'Uzbekiztán','Uzbekistan',
+  'Tunisia','Túnez','Tunez', // GRUPOS_INFO usa 'Tunisia'
+  'Uzbekistán','Uzbekistan',
   'Jordania',
   'Panamá','Panama',
   'Catar','Qatar',
   'Curazao',
-  'Nueva Zelanda','New Zealand',
+  'N.Zelanda','Nueva Zelanda','New Zealand', // GRUPOS_INFO usa 'N.Zelanda'
   'Chequia','Czech Republic',
-  'Arabia Saudita','Saudi Arabia',
+  'Arabia','Arabia Saudita','Saudi Arabia', // GRUPOS_INFO usa 'Arabia'
   'Uruguay',
   'Escocia','Scotland',
   'Turquía','Turkey',
@@ -954,7 +956,7 @@ function buildMatchCards(nombre){
       // Solo mostrar pts si hay resultado real confirmado en TablaControl
       // ptsBono viene del sheet y ya tiene el puntaje correcto (4 si acertó 1ro, 3 si acertó 2do, etc)
       const pts1Label = realC1 ? (realC1===n1 ? '<span style="color:var(--dorado);font-weight:700;font-size:10px;margin-left:4px">+4pts ✓</span>' : '<span style="color:var(--rojo);font-size:10px;margin-left:4px">✗ Real: '+realC1+'</span>') : (n1!=='?'?'<span style="color:var(--text3);font-size:9px;margin-left:4px">⏳</span>':'');
-      const pts2Label = realC2 ? (realC2===n2 ? '<span style="color:#C0C0C0;font-weight:700;font-size:10px;margin-left:4px">+3pts ✓</span>' : '<span style="color:var(--rojo);font-size:10px;margin-left:4px">✗ Real: '+realC2+'</span>') : (n2!=='?'?'<span style="color:var(--text3);font-size:9px;margin-left:4px">⏳</span>':'');
+      const pts2Label = realC2 ? (realC2===n2 ? '<span style="color:#8a8a8a;font-weight:700;font-size:10px;margin-left:4px">+3pts ✓</span>' : '<span style="color:var(--rojo);font-size:10px;margin-left:4px">✗ Real: '+realC2+'</span>') : (n2!=='?'?'<span style="color:var(--text3);font-size:9px;margin-left:4px">⏳</span>':'');
       // badge: solo cuando hay resultado real
       const badge = ptsBono>=4?'<span class="badge b-exact" style="font-size:9px">⭐+4</span>':ptsBono>0?'<span class="badge b-result" style="font-size:9px">✓+'+ptsBono+'</span>':realC1&&realC1!==n1?'<span class="badge b-miss" style="font-size:9px">✗</span>':!realC1&&n1!=='?'?'<span class="badge b-pend" style="font-size:9px">⏳</span>':'';
       // 3er lugar: buscar si hay un equipo de este grupo en los terceros del bracket
@@ -976,7 +978,7 @@ function buildMatchCards(nombre){
           <span style="color:var(--dorado)">🥇</span>&nbsp;<span>${n1}</span>${pts1Label}
         </div>
         <div style="padding:5px 10px;${ter3?'border-bottom:1px dashed var(--border);':''}font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:2px">
-          <span style="color:#C0C0C0">🥈</span>&nbsp;<span>${n2}</span>${pts2Label}
+          <span style="color:#8a8a8a">🥈</span>&nbsp;<span>${n2}</span>${pts2Label}
         </div>
         ${ter3Html}
       </div>`;
@@ -2028,10 +2030,13 @@ function buildTennisDraw(nombre){
   const rsemiPlayed=rsemi_s.size>0;
   const rfinPlayed=rfin_s.size>0;
   const rchampPlayed=rChamp!=='';
-  // Si cuartos reales ya se jugaron: los que estaban en roct pero no pasaron → eliminados
+  // Si 8vos reales ya se jugaron: los que pasaron de 16vos pero no ganaron su partido de 8vos → eliminados
   if(rctoPlayed) roct.forEach(v=>{ if(v&&!rcto_s.has(v)) globalElim.add(v); });
+  // Si cuartos reales ya se jugaron: los que pasaron de 8vos pero no ganaron cuartos → eliminados
   if(rsemiPlayed) rcto.forEach(v=>{ if(v&&!rsemi_s.has(v)) globalElim.add(v); });
+  // Si semis reales ya se jugaron: los que pasaron de cuartos pero no ganaron semis → eliminados
   if(rfinPlayed)  rsemi.forEach(v=>{ if(v&&!rfin_s.has(v)) globalElim.add(v); });
+  // Si la final ya se jugó: el finalista que no fue campeón ni 3er lugar → eliminado (perdió la final)
   if(rchampPlayed) rfin.forEach(v=>{ if(v&&v!==rChamp&&v!==rThird) globalElim.add(v); });
   // Equipos eliminados en fase de grupos (del set global ELIMINADOS)
   if(typeof ELIMINADOS!=='undefined') ELIMINADOS.forEach(v=>globalElim.add(v));
@@ -2112,7 +2117,7 @@ function buildTennisDraw(nombre){
     if(globalElim.has(v)){
       c16='var(--rojo)'; // eliminado en grupos o ronda anterior
     } else if(!p16Played){
-      c16='var(--text)'; // partido no jugado aún → blanco
+      c16='var(--text)'; // partido no jugado aún → color normal (neutro)
     } else if(v===realWinner16){
       c16='var(--verde)'; // ganó en realidad → verde
     } else {
@@ -2248,12 +2253,12 @@ function buildTennisDraw(nombre){
         <div style="margin-bottom:8px;text-align:center;padding:8px 6px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);border-radius:7px">
           <div style="font-size:9px;color:var(--text2);font-weight:600">🏆 CAMPEÓN</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:${champOk&&rChamp===champ?'var(--verde)':'var(--dorado)'};margin-top:2px">${champ||'TBD'}</div>
-          ${champOk?`<div style="font-size:8px;color:${rChamp===champ?'var(--verde)':'var(--rojo)'};">${rChamp===champ?'⭐ Correcto':'✗ '+rChamp}</div>`:''}
+          ${champOk?`<div style="font-size:8px;color:${rChamp===champ?'var(--verde)':'var(--rojo)'};font-weight:${rChamp===champ?'700':'400'}">${rChamp===champ?'⭐ +12 Correcto':'✗ '+rChamp}</div>`:''}
         </div>
         <div style="text-align:center;padding:6px;background:rgba(205,127,50,.06);border:1px solid rgba(205,127,50,.28);border-radius:7px">
           <div style="font-size:9px;color:var(--text2);font-weight:600">🥉 3ER LUGAR</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:${thirdOk&&rThird===third?'var(--verde)':'#CD7F32'};margin-top:1px">${third||'TBD'}</div>
-          ${thirdOk?`<div style="font-size:8px;color:${rThird===third?'var(--verde)':'var(--rojo)'};">${rThird===third?'✓':'✗ '+rThird}</div>`:''}
+          ${thirdOk?`<div style="font-size:8px;color:${rThird===third?'var(--verde)':'var(--rojo)'};font-weight:${rThird===third?'700':'400'}">${rThird===third?'✓ +5 Correcto':'✗ '+rThird}</div>`:''}
         </div>
       </td>`;
     }
@@ -2387,7 +2392,7 @@ function buildEliminados(){
   })).sort((a,b)=>b.pts-a.pts||b.dg-a.dg);
 
   document.getElementById('eliminados-cont').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Pronósticos de <strong>${total}</strong> quinieleros para cada equipo en cada ronda.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">PJ/Pts/DG = resultados reales de grupos. Las columnas de ronda muestran cuántos de los <strong>${total}</strong> quinieleros pronosticaron a cada equipo llegando ahí.</p>
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap">
       <thead><tr style="border-bottom:2px solid var(--border)">
