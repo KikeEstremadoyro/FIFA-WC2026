@@ -166,6 +166,7 @@ footer{text-align:center;padding:20px;color:var(--text3);font-size:11px;border-t
   <button class="nb" onclick="show('profetas')" id="btn-profetas">🔮 Profetas</button>
   <button class="nb" onclick="show('nominados')" id="btn-nominados">🎖 Nominados</button>
   <button class="nb" onclick="show('grupos')" id="btn-grupos">📊 Grupos</button>
+  <button class="nb" onclick="show('eliminados')" id="btn-eliminados">❌ Eliminados</button>
   <button class="nb" onclick="show('comentarios')" id="btn-comentarios">📰 Crónica</button>
   <button class="nb" onclick="show('curiosos')" id="btn-curiosos">🧩 Curiosidades</button>
   <button class="nb" onclick="show('claudinho')" id="btn-claudinho">🤖 Claudinho</button>
@@ -233,6 +234,11 @@ footer{text-align:center;padding:20px;color:var(--text3);font-size:11px;border-t
 <div id="grupos" class="sec">
   <div class="sec-title">📊 Por Grupo</div>
   <div class="grupos-grid" id="grupos-cont"><div class="loading"><div class="spinner"></div><p>Calculando...</p></div></div>
+</div>
+
+<div id="eliminados" class="sec">
+  <div class="sec-title">❌ Eliminados</div>
+  <div id="eliminados-cont"><div class="loading"><div class="spinner"></div><p>Calculando...</p></div></div>
 </div>
 
 <div id="comentarios" class="sec">
@@ -324,24 +330,6 @@ let ELIMINADOS = new Set([
   'Sudáfrica','South Africa',
   'Irak','Iraq'
 ]);
-let CLASIFICADOS_16 = new Set([
-  // Clasificados a 16avos (los 32 que pasaron de grupos, equivalente a los 16avos)
-  'México','Mexico','USA','Alemania','Argentina','Francia',
-  'Canadá','Canada','Suiza','Switzerland','Holanda','Netherlands',
-  'España','Spain','Brasil','Brazil','Portugal','Inglaterra','England',
-  'Bélgica','Belgium','Colombia','Australia','Japón','Japan',
-]);
-
-// Actualizar dinámicamente desde realResults cuando esté disponible
-function updateTorneoSets(){
-  if(!realResults.length) return;
-  // La fila de resultados reales tiene los 1ros y 2dos confirmados en cols 233+
-  // Si un 1ro o 2do tiene resultado (pts > 0 en col+2), ese equipo clasifica
-  // Si un equipo aparece solo en col de 3ros sin confirmar, puede ser eliminado
-  // Por ahora mantenemos el Set manual — se puede expandir cuando haya más resultados
-  // Los 1ros/2dos de grupos con todos partidos jugados están en CLASIFICADOS_16
-  // Los que no puedan matemáticamente clasificar están en ELIMINADOS
-}
 
 // ══════════════════════════════════════════════
 // STATE
@@ -1133,8 +1121,6 @@ function buildProfetas(){
         <th style="padding:5px 4px;text-align:center;color:var(--dorado)">🏆</th>
       </tr></thead>
       <tbody>${topOct16.map(([eq,n16],i)=>{
-        const n8=ctoCount[eq]||0, n4=ctoCount[eq]||0;
-        const nSemi=semiCount[eq]||0, nFin=finCount[eq]||0, nChamp=champCount[eq]||0;
         const isMex=eq==='México';
         return `<tr style="border-bottom:1px solid var(--border);background:${isMex?'rgba(0,140,69,0.06)':'transparent'}">
           <td style="padding:4px 8px;color:var(--text2);font-weight:600">${i+1}</td>
@@ -1749,7 +1735,7 @@ async function genComment(){
     ? (bigMover.diff>0?'📈 '+bigMover.nombre.split(' ')[0]+' subió '+bigMover.diff+' lugares':'📊 Sin grandes movimientos')
     : '🎯 '+topEx.nombre.split(' ')[0]+' lidera en exactos';
   const body2 = hasMover
-    ? ((bigMover.diff>0?'<strong>'+bigMover.nombre.split(' ')[0]+'</strong> subió <strong>'+bigMover.diff+' posiciones</strong> (del #'+bigMover.oldRank+' al #'+bigMover.newRank+'). ':'')+
+    ? ((bigMover.diff>0?'<strong>'+bigMover.nombre.split(' ')[0]+'</strong> subió <strong>'+bigMover.diff+' posiciones</strong> (del #'+bigMover.prevRank+' al #'+bigMover.p.rank+'). ':'')+
       (bigDrop.diff>0?'<strong>'+bigDrop.nombre.split(' ')[0]+'</strong> bajó '+bigDrop.diff+' puestos (del #'+bigDrop.oldRank+' al #'+bigDrop.newRank+'). Eita, así es esto minha gente!':''))
     : '<strong>'+topEx.nombre.split(' ')[0]+'</strong> lidera en exactos con <strong>'+(topEx.exactosR||topEx.exactos)+' marcadores precisos</strong>. '+(zeroGpos.length>0?zeroGpos.length+' quinieleiros aún sin puntos de grupos — ¡hay que ponerse las pilas, caramba!':'¡Todos los quinieleiros ya tienen puntos de grupos — eso habla del nivel del grupo!');
 
@@ -1772,7 +1758,7 @@ async function genComment(){
     comentCard(today,'tag-cur','🧩 Curiosidad',hl3,body3);
 
   // Cargar historial de días anteriores
-  if(elHist) elHist.innerHTML=loadHistoryComments(dateKey);
+  if(elHist) elHist.innerHTML=loadHistoryComments(_ckToday);
 
   // Intentar con IA si hay API key
   if(apiKey){
@@ -1796,8 +1782,8 @@ async function genComment(){
           {date:today,tagClass:tagMap[parsed[1].tag]||'tag-cur',tag:parsed[1].tag,headline:parsed[1].headline,body:parsed[1].body},
           {date:today,tagClass:tagMap[parsed[2].tag]||'tag-cur',tag:parsed[2].tag,headline:parsed[2].headline,body:parsed[2].body},
         ];
-        saveComment(dateKey, todayCards);
-        if(elHist) elHist.innerHTML=loadHistoryComments(dateKey);
+        saveComment(_ckToday, todayCards);
+        if(elHist) elHist.innerHTML=loadHistoryComments(_ckToday);
       }
     }catch(e){
       console.warn('Crónica IA falló:',e.message);
@@ -1807,8 +1793,8 @@ async function genComment(){
         {date:today,tagClass:'tag-mov',tag:'Movimientos',headline:hl2,body:body2},
         {date:today,tagClass:'tag-cur',tag:'Curiosidad',headline:hl3,body:body3},
       ];
-      saveComment(dateKey, todayCards);
-      if(elHist) elHist.innerHTML=loadHistoryComments(dateKey);
+      saveComment(_ckToday, todayCards);
+      if(elHist) elHist.innerHTML=loadHistoryComments(_ckToday);
     }
   } else {
     // Sin API key: guardar versión automática
@@ -1817,8 +1803,8 @@ async function genComment(){
       {date:today,tagClass:'tag-mov',tag:'Movimientos',headline:hl2,body:body2},
       {date:today,tagClass:'tag-cur',tag:'Curiosidad',headline:hl3,body:body3},
     ];
-    saveComment(dateKey, todayCards);
-    if(elHist) elHist.innerHTML=loadHistoryComments(dateKey);
+    saveComment(_ckToday, todayCards);
+    if(elHist) elHist.innerHTML=loadHistoryComments(_ckToday);
   }
 }
 
@@ -1889,7 +1875,7 @@ function show(id){
   if(id==='profetas'&&quinielaRows.length)buildProfetas();
   if(id==='grupos'&&quinielaRows.length)buildGrupos();
   if(id==='eliminados'&&quinielaRows.length)buildEliminados();
-  if(id==='cronica')genComment(); // regenerar si los elementos son visibles
+  if(id==='comentarios')genComment(); // regenerar si los elementos son visibles
   if(id==='curiosos'&&players.length)buildFacts();
 }
 
@@ -2325,7 +2311,7 @@ function buildEliminados(){
   const counts={};
   const addCount=(equipo,ronda)=>{
     if(!equipo)return;
-    if(!counts[equipo])counts[equipo]={team:equipo,pj:0,pts:0,dg:0,r16:0,r8:0,r4:0,semi:0,fin:0,ter:0,champ:0};
+    if(!counts[equipo])counts[equipo]={team:equipo,pj:0,pts:0,dg:0,r16:0,r4:0,semi:0,fin:0,ter:0,champ:0};
     counts[equipo][ronda]=(counts[equipo][ronda]||0)+1;
   };
 
@@ -2334,14 +2320,12 @@ function buildEliminados(){
     if(!nombre||nombre==='Nombre'||isNaN(parseInt(r[5]))) continue;
     // Leer clasificados 16vos (oct: cols 278-293)
     for(let i=0;i<16;i++){const t=getV(r,278+i);if(t)addCount(t,'r16');}
-    for(let i=0;i<8;i++){const t=getV(r,295+i);if(t)addCount(t,'r8');}
+    // Cuartos (8 equipos que llegan a cuartos, ganadores de 8vos): cols 295-302
+    for(let i=0;i<8;i++){const t=getV(r,295+i);if(t)addCount(t,'r4');}
     for(let i=0;i<4;i++){const t=getV(r,304+i);if(t)addCount(t,'semi');}
     for(let i=0;i<2;i++){const t=getV(r,309+i);if(t)addCount(t,'fin');}
     const ter=getV(r,312);if(ter)addCount(ter,'ter');
     const champ=getV(r,313);if(champ)addCount(champ,'champ');
-    // r4: cuartos (8 equipos que llegan a cuartos = ganadores de 8vos)
-    for(let i=0;i<4;i++){const t=getV(r,295+i*2)||getV(r,295+i*2+1);} // aprox
-    for(let i=0;i<8;i++){const t=getV(r,295+i);if(t)addCount(t,'r4');}
   }
 
   // Obtener datos reales de grupos para PJ/Pts/DG
@@ -2394,7 +2378,6 @@ function buildEliminados(){
     pts:teamStats[t]?.pts||0,
     dg:(teamStats[t]?.gf||0)-(teamStats[t]?.gc||0),
     r16:counts[t]?.r16||0,
-    r8:counts[t]?.r8||0,
     r4:counts[t]?.r4||0,
     semi:counts[t]?.semi||0,
     fin:counts[t]?.fin||0,
@@ -2412,7 +2395,6 @@ function buildEliminados(){
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--text2)">PJ</th>
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--text2)">Pts</th>
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--text2)">DG</th>
-        <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--azul)">16vos</th>
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--azul)">8vos</th>
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--azul)">4tos</th>
         <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--azul)">Semis</th>
@@ -2427,7 +2409,6 @@ function buildEliminados(){
           <td style="padding:5px 4px;text-align:center;font-weight:600;color:var(--text)">${r.pts}</td>
           <td style="padding:5px 4px;text-align:center;color:${r.dg>0?'var(--verde)':r.dg<0?'var(--rojo)':'var(--text2)'}">${r.dg>0?'+':''}${r.dg}</td>
           <td style="padding:5px 4px;text-align:center;color:var(--text2)">${r.r16||'—'}</td>
-          <td style="padding:5px 4px;text-align:center;color:var(--text2)">${r.r8||'—'}</td>
           <td style="padding:5px 4px;text-align:center;color:var(--text2)">${r.r4||'—'}</td>
           <td style="padding:5px 4px;text-align:center;color:var(--text2)">${r.semi||'—'}</td>
           <td style="padding:5px 4px;text-align:center;color:${r.fin?'var(--dorado)':'var(--text3)'}">${r.fin||'—'}</td>
