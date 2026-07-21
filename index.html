@@ -342,10 +342,14 @@ async function tryFetch(url, ms=10000) {
 function isValidCSV(txt) { return txt && txt.length > 50 && !txt.trim().startsWith('<!'); }
 async function fetchCSV(gid) {
   const direct = csvUrl(gid);
-  try { const r = await tryFetch(direct,7000); if(r.ok){const t=await r.text(); if(isValidCSV(t)) return parseCSV(t);} } catch(e) {}
+  const worker = `https://claudinho-proxy.kestremadoyro.workers.dev/csv?gid=${gid}`;
+  // Proxy cascade — Worker primero (más confiable), luego públicos
+  try { const r = await tryFetch(worker,8000); if(r.ok){const t=await r.text(); if(isValidCSV(t)) return parseCSV(t);} } catch(e) {}
+  try { const r = await tryFetch(direct,8000); if(r.ok){const t=await r.text(); if(isValidCSV(t)) return parseCSV(t);} } catch(e) {}
   try { const r = await tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(direct)}`,10000); if(r.ok){const d=await r.json(); if(isValidCSV(d.contents)) return parseCSV(d.contents);} } catch(e) {}
   try { const r = await tryFetch(`https://corsproxy.io/?${encodeURIComponent(direct)}`,10000); if(r.ok){const t=await r.text(); if(isValidCSV(t)) return parseCSV(t);} } catch(e) {}
-  throw new Error('No se pudo conectar con Google Sheets.');
+  try { const r = await tryFetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(direct)}`,10000); if(r.ok){const t=await r.text(); if(isValidCSV(t)) return parseCSV(t);} } catch(e) {}
+  throw new Error('FIFA WC 2026: No se pudo conectar con Google Sheets.\nIntentando siguiente...');
 }
 function parseCSV(txt) {
   return txt.split('\n').map(line => {
